@@ -1,0 +1,16 @@
+stages:
+  - deploy
+
+deploy_docs:
+  stage: deploy
+  tags:
+    - windows
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master"
+  before_script:
+    - powershell -NoProfile -Command "Get-Command ssh; Get-Command scp"
+    - powershell -NoProfile -Command "$env:DEPLOY_KEY_PATH = Join-Path $env:TEMP 'deploy_key'; Set-Content -Path $env:DEPLOY_KEY_PATH -Value $env:SSH_PRIVATE_KEY -NoNewline; icacls $env:DEPLOY_KEY_PATH /inheritance:r /grant:r $env:USERNAME:`"(R)`""
+  script:
+    - powershell -NoProfile -ExecutionPolicy Bypass -Command "$port = if ($env:DEPLOY_PORT) { [int]$env:DEPLOY_PORT } else { 22 }; ./intranet-doc-deploy/windows/publish.ps1 -ServerHost $env:DEPLOY_HOST -ServerUser $env:DEPLOY_USER -ServerPort $port -SshKeyPath $env:DEPLOY_KEY_PATH -SourceDir $env:CI_PROJECT_DIR"
+  after_script:
+    - powershell -NoProfile -Command "if (Test-Path $env:DEPLOY_KEY_PATH) { Remove-Item $env:DEPLOY_KEY_PATH -Force }"

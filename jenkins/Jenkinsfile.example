@@ -1,0 +1,28 @@
+pipeline {
+  agent any
+
+  environment {
+    DEPLOY_HOST = '192.168.1.100'
+    DEPLOY_USER = 'deploy'
+    DEPLOY_PORT = '22'
+  }
+
+  stages {
+    stage('Deploy Docs') {
+      steps {
+        withCredentials([sshUserPrivateKey(credentialsId: 'intra-docs-deploy-key', keyFileVariable: 'DEPLOY_KEY')]) {
+          powershell '''
+            $port = [int]$env:DEPLOY_PORT
+            ./intranet-doc-deploy/windows/publish.ps1 `
+              -ServerHost $env:DEPLOY_HOST `
+              -ServerUser $env:DEPLOY_USER `
+              -ServerPort $port `
+              -SshKeyPath $env:DEPLOY_KEY `
+              -SourceDir $env:WORKSPACE
+          '''
+        }
+      }
+    }
+  }
+}
+
