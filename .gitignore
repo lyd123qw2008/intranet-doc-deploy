@@ -1,0 +1,5 @@
+tools/pandoc/
+tools/pandoc-dist-39/
+tools/pandoc-*.zip
+tools/__pycache__/
+*.pyc

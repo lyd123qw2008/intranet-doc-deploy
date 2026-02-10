@@ -37,6 +37,43 @@ function Compress-WithRetry {
     }
 }
 
+function Compress-NormalizedZip {
+    param(
+        [string]$SourceRoot,
+        [string]$Destination
+    )
+
+    Add-Type -AssemblyName System.IO.Compression
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+    if (Test-Path $Destination) {
+        Remove-Item $Destination -Force
+    }
+
+    $zip = [System.IO.Compression.ZipFile]::Open($Destination, [System.IO.Compression.ZipArchiveMode]::Create)
+    try {
+        $files = Get-ChildItem -Path $SourceRoot -Recurse -File
+        $root = [System.IO.Path]::GetFullPath($SourceRoot)
+        if (-not $root.EndsWith([System.IO.Path]::DirectorySeparatorChar)) {
+            $root += [System.IO.Path]::DirectorySeparatorChar
+        }
+        foreach ($f in $files) {
+            $full = [System.IO.Path]::GetFullPath($f.FullName)
+            if ($full.StartsWith($root, [System.StringComparison]::OrdinalIgnoreCase)) {
+                $rel = $full.Substring($root.Length)
+            }
+            else {
+                $rel = $f.Name
+            }
+            $entryName = $rel -replace '\\', '/'
+            [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $f.FullName, $entryName, [System.IO.Compression.CompressionLevel]::Optimal) | Out-Null
+        }
+    }
+    finally {
+        $zip.Dispose()
+    }
+}
+
 Require-Command "ssh"
 Require-Command "scp"
 
@@ -84,7 +121,7 @@ try {
         Remove-Item $bundle -Force
     }
 
-    Compress-WithRetry -Path (Join-Path $tmpRoot "*") -Destination $bundle
+    Compress-NormalizedZip -SourceRoot $tmpRoot -Destination $bundle
 
     Write-Host "Uploading bundle to $sshTarget ..."
     & scp @scpArgs $bundle "$sshTarget`:$remoteTmp"
@@ -108,8 +145,37 @@ finally {
     }
 }
 
+function Write-UrlLine {
+    param(
+        [string]$Url,
+        [string]$Label
+    )
+
+    $supportsAnsi = $false
+    try {
+        if ($PSStyle.OutputRendering -ne 'PlainText') {
+            $supportsAnsi = $true
+        }
+    } catch {
+        $supportsAnsi = $false
+    }
+
+    if ($supportsAnsi) {
+        $esc = [char]27
+        Write-Host ("  {0}]8;;{1}{0}\{2}{0}]8;;{0}\" -f $esc, $Url, $Label)
+        Write-Host "    $Url"
+    } else {
+        Write-Host "  $Url"
+    }
+}
+
 Write-Host "Deploy complete."
 Write-Host "URLs:"
-Write-Host "  http://$ServerHost`:9776/RCOS_API_DOC.html"
-Write-Host "  http://$ServerHost`:9776/5gos_liuyd.html"
+$url1 = "http://$ServerHost`:9776/RCOS_API_DOC.html"
+$url2 = "http://$ServerHost`:9776/5gos_liuyd.html"
+Write-UrlLine -Url $url1 -Label "RCOS_API_DOC.html"
+Write-UrlLine -Url $url2 -Label "5gos_liuyd.html"
+
+
+
 

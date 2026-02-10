@@ -1,0 +1,877 @@
+﻿<!DOCTYPE html>
+<html$if(lang)$ lang="$lang$"$endif$>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>$if(title-prefix)$$title-prefix$ - $endif$$pagetitle$</title>
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/github-markdown-css@5.8.1/github-markdown.min.css"
+  />
+  $if(highlighting-css)$
+  <style>
+$highlighting-css$
+  </style>
+  $endif$
+  <style>
+    :root {
+      --bg: #f6f8fa;
+      --panel: #ffffff;
+      --line: #d0d7de;
+      --text: #24292f;
+      --muted: #57606a;
+      --code-bg: #f6f8fa;
+      --code-border: #d8dee4;
+      --table-head: #f6f8fa;
+      --table-zebra: #fcfcfd;
+      --brand: #0969da;
+      --brand-soft: #ddf4ff;
+      --toc-hover: #f3f4f6;
+      --toc-text: #4b5563;
+      --input-bg: #ffffff;
+      --btn-bg: #ffffff;
+      --btn-hover: #f3f4f6;
+      --shadow: 0 6px 16px rgba(27, 31, 35, 0.12);
+    }
+
+    html[data-theme='dark'] {
+      --bg: #0d1117;
+      --panel: #161b22;
+      --line: #30363d;
+      --text: #c9d1d9;
+      --muted: #8b949e;
+      --code-bg: #161b22;
+      --code-border: #30363d;
+      --table-head: #161b22;
+      --table-zebra: #11161d;
+      --brand: #58a6ff;
+      --brand-soft: #1f2f46;
+      --toc-hover: #21262d;
+      --toc-text: #b1bac4;
+      --input-bg: #0d1117;
+      --btn-bg: #161b22;
+      --btn-hover: #21262d;
+      --shadow: 0 8px 20px rgba(1, 4, 9, 0.55);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+
+    .layout {
+      width: 100%;
+      max-width: none;
+      margin: 0;
+      padding: 16px 20px 16px 0;
+      display: grid;
+      grid-template-columns: 240px minmax(0, 1fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .toc-panel {
+      position: sticky;
+      top: 16px;
+      max-height: calc(100vh - 32px);
+      overflow: auto;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+    }
+
+    .toc-panel h2 {
+      margin: 0;
+      font-size: 14px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .toc-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .theme-toggle {
+      height: 26px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 0 8px;
+      background: var(--btn-bg);
+      color: var(--muted);
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .theme-toggle:hover {
+      background: var(--btn-hover);
+    }
+
+    .toc-filter {
+      width: 100%;
+      height: 30px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 0 8px;
+      margin: 0 0 10px;
+      font-size: 13px;
+      color: var(--text);
+      background: var(--input-bg);
+      outline: none;
+    }
+
+    .toc-filter:focus {
+      border-color: #54aeff;
+      box-shadow: 0 0 0 2px rgba(84, 174, 255, 0.2);
+    }
+
+    #TOC ul {
+      list-style: none;
+      margin: 0;
+      padding-left: 0;
+      border-left: 0;
+    }
+
+    #TOC ul ul {
+      margin-left: 4px;
+      padding-left: 8px;
+      border-left: 1px solid #eaeef2;
+    }
+
+    #TOC li {
+      margin: 2px 0;
+      line-height: 1.3;
+      position: relative;
+    }
+
+    #TOC a {
+      display: block;
+      color: var(--toc-text);
+      text-decoration: none;
+      word-break: break-word;
+      border-radius: 6px;
+      padding: 4px 6px;
+      transition: color 120ms ease, background-color 120ms ease;
+    }
+
+    #TOC a:hover {
+      color: var(--brand);
+      background: var(--toc-hover);
+      text-decoration: none;
+    }
+
+    #TOC a.active {
+      color: #0b4fb3;
+      background: var(--brand-soft);
+      font-weight: 600;
+    }
+
+    #TOC li.has-children > a {
+      padding-left: 20px;
+    }
+
+    #TOC .toc-toggle {
+      position: absolute;
+      left: 4px;
+      top: 6px;
+      width: 14px;
+      height: 14px;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 0;
+      font-size: 12px;
+      line-height: 14px;
+      text-align: center;
+    }
+
+    #TOC li.collapsed > ul {
+      display: none;
+    }
+
+    #TOC li.toc-hidden {
+      display: none !important;
+    }
+
+    #TOC li:not(.collapsed) > .toc-toggle {
+      transform: rotate(90deg);
+    }
+
+    .doc-panel {
+      min-width: 0;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 28px 34px;
+    }
+
+    .markdown-body {
+      background: transparent !important;
+      max-width: none;
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.75;
+    }
+
+    .markdown-body h1,
+    .markdown-body h2,
+    .markdown-body h3,
+    .markdown-body h4,
+    .markdown-body h5,
+    .markdown-body h6 {
+      line-height: 1.35;
+      font-weight: 600;
+      margin-top: 1.35em;
+      margin-bottom: 0.55em;
+      scroll-margin-top: 12px;
+    }
+
+    .markdown-body h1 { font-size: 2em; }
+    .markdown-body h2 { font-size: 1.5em; }
+    .markdown-body h3 { font-size: 1.25em; }
+    .markdown-body h4 { font-size: 1.06em; }
+
+    .markdown-body p,
+    .markdown-body ul,
+    .markdown-body ol,
+    .markdown-body blockquote {
+      margin-top: 0;
+      margin-bottom: 0.9em;
+    }
+
+    .markdown-body pre {
+      padding: 14px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--code-border);
+      background: var(--code-bg);
+      overflow: auto;
+      line-height: 1.5;
+      position: relative;
+    }
+
+    .markdown-body code {
+      font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 0.9em;
+    }
+
+    .markdown-body pre > code {
+      background: transparent !important;
+      padding: 0;
+      border: 0;
+      white-space: pre;
+    }
+
+    .markdown-body pre code {
+      color: #24292f;
+    }
+
+    .markdown-body pre code span.kw,
+    .markdown-body pre code span.cf,
+    .markdown-body pre code span.er {
+      color: #cf222e;
+    }
+
+    .markdown-body pre code span.dt,
+    .markdown-body pre code span.op,
+    .markdown-body pre code span.bu {
+      color: #24292f;
+    }
+
+    .markdown-body pre code span.st,
+    .markdown-body pre code span.vs {
+      color: #0a3069;
+    }
+
+    .markdown-body pre code span.co,
+    .markdown-body pre code span.do {
+      color: #6e7781;
+      font-style: italic;
+    }
+
+    .markdown-body pre code span.an,
+    .markdown-body pre code span.at {
+      color: #8250df;
+    }
+
+    .markdown-body pre code span.fu {
+      color: #8250df;
+    }
+
+    .markdown-body pre code span.dv,
+    .markdown-body pre code span.fl,
+    .markdown-body pre code span.bn {
+      color: #0550ae;
+    }
+
+    .markdown-body pre code span.va {
+      color: #953800;
+    }
+
+    .markdown-body :not(pre) > code {
+      background: var(--code-bg);
+      border: 1px solid var(--code-border);
+      border-radius: 6px;
+      padding: 0.12em 0.35em;
+    }
+
+    .markdown-body pre.http-snippet {
+      border-left: 4px solid #1f6feb;
+      background: #f8fbff;
+    }
+
+    html[data-theme='dark'] .markdown-body pre.http-snippet {
+      border-left-color: #58a6ff;
+      background: #0f1a27;
+    }
+
+    html[data-theme='dark'] .markdown-body pre,
+    html[data-theme='dark'] .markdown-body pre > code {
+      background: #161b22;
+      border-color: #30363d;
+      color: #c9d1d9;
+    }
+
+    html[data-theme='dark'] .markdown-body pre code span.kw,
+    html[data-theme='dark'] .markdown-body pre code span.cf,
+    html[data-theme='dark'] .markdown-body pre code span.er {
+      color: #ff7b72 !important;
+    }
+
+    html[data-theme='dark'] .markdown-body pre code span.dt,
+    html[data-theme='dark'] .markdown-body pre code span.op,
+    html[data-theme='dark'] .markdown-body pre code span.bu {
+      color: #c9d1d9 !important;
+    }
+
+    html[data-theme='dark'] .markdown-body pre code span.st,
+    html[data-theme='dark'] .markdown-body pre code span.vs {
+      color: #a5d6ff !important;
+    }
+
+    html[data-theme='dark'] .markdown-body pre code span.co,
+    html[data-theme='dark'] .markdown-body pre code span.do {
+      color: #8b949e !important;
+      font-style: italic;
+    }
+
+    html[data-theme='dark'] .markdown-body pre code span.an,
+    html[data-theme='dark'] .markdown-body pre code span.at {
+      color: #d2a8ff !important;
+    }
+
+    html[data-theme='dark'] .markdown-body pre code span.fu {
+      color: #d2a8ff !important;
+    }
+
+    html[data-theme='dark'] .markdown-body pre code span.dv,
+    html[data-theme='dark'] .markdown-body pre code span.fl,
+    html[data-theme='dark'] .markdown-body pre code span.bn {
+      color: #79c0ff !important;
+    }
+
+    html[data-theme='dark'] .markdown-body pre code span.va {
+      color: #ffa657 !important;
+    }
+
+    html[data-theme='dark'] .http-method { color: #ff7b72; }
+    html[data-theme='dark'] .http-url { color: #79c0ff; }
+    html[data-theme='dark'] .http-header-key { color: #d2a8ff; }
+    html[data-theme='dark'] .http-header-val { color: #c9d1d9; }
+    html[data-theme='dark'] .http-placeholder {
+      color: #9ecbff;
+      background: #1f2f46;
+    }
+
+    .http-method {
+      color: #cf222e;
+      font-weight: 700;
+    }
+
+    .http-url {
+      color: #0969da;
+      font-weight: 600;
+    }
+
+    .http-header-key {
+      color: #6f42c1;
+      font-weight: 600;
+    }
+
+    .http-header-val {
+      color: #0a3069;
+    }
+
+    .http-placeholder {
+      color: #0550ae;
+      background: #ddf4ff;
+      border-radius: 4px;
+      padding: 0 2px;
+    }
+
+    .markdown-body table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.1em 0;
+      font-size: 14px;
+      table-layout: auto;
+    }
+
+    .markdown-body table th,
+    .markdown-body table td {
+      border: 1px solid var(--line);
+      padding: 8px 10px;
+      vertical-align: top;
+    }
+
+    .markdown-body table thead th {
+      background: var(--table-head);
+      font-weight: 600;
+    }
+
+    .markdown-body table tbody tr:nth-child(even) {
+      background: var(--table-zebra);
+    }
+
+    .markdown-body table tbody tr:hover {
+      background: #eef6ff;
+    }
+
+    html[data-theme='dark'] .markdown-body table {
+      color: var(--text);
+      background: transparent;
+    }
+
+    html[data-theme='dark'] .markdown-body table th,
+    html[data-theme='dark'] .markdown-body table td {
+      border-color: var(--line);
+      background: #0f1622;
+      color: var(--text);
+    }
+
+    html[data-theme='dark'] .markdown-body table thead th {
+      background: #182233;
+      color: #dbe7f5;
+    }
+
+    html[data-theme='dark'] .markdown-body table tbody tr:nth-child(even) td {
+      background: #131d2b;
+    }
+
+    html[data-theme='dark'] .markdown-body table tbody tr:hover td {
+      background: #1a2a3f;
+    }
+
+    .code-copy-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      height: 24px;
+      min-width: 56px;
+      border: 1px solid #d0d7de;
+      border-radius: 6px;
+      background: var(--btn-bg);
+      color: var(--text);
+      font-size: 12px;
+      line-height: 1;
+      padding: 0 8px;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 120ms ease, background-color 120ms ease;
+    }
+
+    .markdown-body pre:hover .code-copy-btn,
+    .markdown-body pre:focus-within .code-copy-btn {
+      opacity: 1;
+    }
+
+    .code-copy-btn:hover {
+      background: var(--btn-hover);
+    }
+
+    .back-to-top {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      width: 44px;
+      height: 44px;
+      border: 1px solid #d0d7de;
+      border-radius: 999px;
+      background: var(--btn-bg);
+      color: var(--text);
+      font-size: 20px;
+      line-height: 1;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      z-index: 1000;
+    }
+
+    .back-to-top:hover {
+      background: var(--btn-hover);
+      border-color: var(--line);
+    }
+
+    .back-to-top.show {
+      display: inline-flex;
+    }
+
+    @media (max-width: 960px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .toc-panel {
+        position: static;
+        max-height: none;
+      }
+
+      .back-to-top {
+        right: 12px;
+        bottom: 12px;
+      }
+    }
+  </style>
+  $for(header-includes)$
+  $header-includes$
+  $endfor$
+</head>
+<body>
+  <div class="layout">
+    $if(toc)$
+    <aside class="toc-panel">
+      <nav id="$idprefix$TOC" role="doc-toc">
+        <div class="toc-head">
+          <h2>Contents</h2>
+          <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">Dark</button>
+        </div>
+        <input id="toc-filter" class="toc-filter" type="text" placeholder="Filter headings..." />
+        $table-of-contents$
+      </nav>
+    </aside>
+    $endif$
+    <main class="doc-panel">
+      <article class="markdown-body">
+        $body$
+      </article>
+    </main>
+  </div>
+    <button id="back-to-top" class="back-to-top" type="button" aria-label="Back to top">↑</button>
+  <script>
+__PINYIN_MATCH_INLINE__
+  </script>
+  <script>
+    (function () {
+      var links = Array.prototype.slice.call(document.querySelectorAll('#TOC a[href^="#"]'));
+      if (!links.length) return;
+
+      var map = links
+        .map(function (a) {
+          var id = decodeURIComponent((a.getAttribute('href') || '').slice(1));
+          return { link: a, target: document.getElementById(id) };
+        })
+        .filter(function (x) { return x.target; });
+
+      if (!map.length) return;
+
+      function setActive(link) {
+        links.forEach(function (a) { a.classList.remove('active'); });
+        if (link) link.classList.add('active');
+      }
+
+      function directChild(el, tag) {
+        var children = el.children || [];
+        for (var i = 0; i < children.length; i++) {
+          if ((children[i].tagName || '').toLowerCase() === tag) return children[i];
+        }
+        return null;
+      }
+
+      function isPinyinMatch(text, keyword) {
+        var pm = window.PinyinMatch;
+        if (!pm || !pm.match) return false;
+        try {
+          return !!pm.match(text, keyword);
+        } catch (e) {
+          return false;
+        }
+      }
+
+      function isHeadingMatch(text, keyword) {
+        var t = (text || '').toLowerCase();
+        var q = (keyword || '').toLowerCase();
+        if (!q) return true;
+        if (t.indexOf(q) !== -1) return true;
+        return isPinyinMatch(text, keyword);
+      }
+
+      var tocRoot = document.getElementById('TOC');
+      var filterInput = document.getElementById('toc-filter');
+      var themeToggle = document.getElementById('theme-toggle');
+      var prefersDark = false;
+      try {
+        prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      } catch (e) {
+        prefersDark = false;
+      }
+
+      var root = document.documentElement;
+      var storedTheme = '';
+      try { storedTheme = localStorage.getItem('doc-theme') || ''; } catch (e) { storedTheme = ''; }
+      if (storedTheme === 'dark' || (storedTheme !== 'light' && prefersDark)) {
+        root.setAttribute('data-theme', 'dark');
+      }
+
+      function refreshThemeLabel() {
+        if (!themeToggle) return;
+        themeToggle.textContent = root.getAttribute('data-theme') === 'dark' ? 'Light' : 'Dark';
+      }
+      refreshThemeLabel();
+
+      if (themeToggle) {
+        themeToggle.addEventListener('click', function () {
+          var dark = root.getAttribute('data-theme') === 'dark';
+          if (dark) root.removeAttribute('data-theme');
+          else root.setAttribute('data-theme', 'dark');
+          try { localStorage.setItem('doc-theme', dark ? 'light' : 'dark'); } catch (e) {}
+          refreshThemeLabel();
+        });
+      }
+
+      if (tocRoot) {
+        var lis = Array.prototype.slice.call(tocRoot.querySelectorAll('li'));
+        lis.forEach(function (li) {
+          var child = directChild(li, 'ul');
+          var anchor = directChild(li, 'a');
+          if (!child || !anchor) return;
+
+          li.classList.add('has-children');
+          li.classList.add('collapsed');
+
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'toc-toggle';
+          btn.setAttribute('aria-label', 'toggle submenu');
+          btn.textContent = '>';
+          btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            li.classList.toggle('collapsed');
+          });
+
+          li.insertBefore(btn, anchor);
+        });
+      }
+
+      function showNodeWithContext(li) {
+        var n = li;
+        while (n && n.tagName && n.tagName.toLowerCase() === 'li') {
+          n.classList.remove('toc-hidden');
+          n.classList.remove('collapsed');
+          n = n.parentElement ? n.parentElement.closest('li') : null;
+        }
+      }
+
+      function applyFilter(keyword) {
+        if (!tocRoot) return;
+        var q = (keyword || '').trim();
+        var items = Array.prototype.slice.call(tocRoot.querySelectorAll('li'));
+
+        if (!q) {
+          items.forEach(function (li) {
+            li.classList.remove('toc-hidden');
+          });
+          return;
+        }
+
+        items.forEach(function (li) {
+          li.classList.add('toc-hidden');
+        });
+
+        items.forEach(function (li) {
+          var a = directChild(li, 'a');
+          if (!a) return;
+          if (!isHeadingMatch(a.textContent || '', q)) return;
+
+          showNodeWithContext(li);
+          Array.prototype.slice.call(li.querySelectorAll('li')).forEach(function (d) {
+            d.classList.remove('toc-hidden');
+          });
+        });
+      }
+
+      function escapeHtml(s) {
+        return s
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+      }
+
+      function markPlaceholders(s) {
+        return s.replace(/\{\{[^}]+\}\}/g, function (m) {
+          return '<span class="http-placeholder">' + m + '</span>';
+        });
+      }
+
+      function formatHttpSnippets() {
+        var blocks = Array.prototype.slice.call(document.querySelectorAll('.markdown-body pre > code'));
+        blocks.forEach(function (code) {
+          var pre = code.parentElement;
+          if (!pre) return;
+
+          var cls = code.className || '';
+          var isHttpLang = /\blanguage-http\b/i.test(cls) || /\blanguage-https\b/i.test(cls);
+          if (cls.indexOf('language-') >= 0 && !isHttpLang) return;
+
+          var text = code.textContent || '';
+          var lines = text.replace(/\r\n/g, '\n').split('\n');
+          if (!lines.length) return;
+
+          var first = (lines[0] || '').trim();
+          if (!/^(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)\s+/i.test(first)) return;
+
+          pre.classList.add('http-snippet');
+          var html = [];
+          for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+            if (i === 0) {
+              var m = line.match(/^([A-Z]+)\s+(\S+)(.*)/i);
+              if (m) {
+                html.push(
+                  '<span class="http-method">' + escapeHtml(m[1].toUpperCase()) + '</span> ' +
+                  '<span class="http-url">' + markPlaceholders(escapeHtml(m[2])) + '</span>' +
+                  escapeHtml(m[3] || '')
+                );
+                continue;
+              }
+            }
+
+            var h = line.match(/^([A-Za-z0-9\-]+)\s*:\s*(.*)/);
+            if (h) {
+              html.push(
+                '<span class="http-header-key">' + escapeHtml(h[1]) + '</span>: ' +
+                '<span class="http-header-val">' + markPlaceholders(escapeHtml(h[2])) + '</span>'
+              );
+            } else {
+              html.push(markPlaceholders(escapeHtml(line)));
+            }
+          }
+
+          code.innerHTML = html.join('\n');
+        });
+      }
+
+      function setupCopyButtons() {
+        function fallbackCopyText(text) {
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          ta.setAttribute('readonly', '');
+          ta.style.position = 'fixed';
+          ta.style.top = '-9999px';
+          ta.style.left = '-9999px';
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          ta.setSelectionRange(0, ta.value.length);
+          var ok = false;
+          try {
+            ok = document.execCommand('copy');
+          } catch (e) {
+            ok = false;
+          }
+          document.body.removeChild(ta);
+          return ok;
+        }
+
+        var blocks = Array.prototype.slice.call(document.querySelectorAll('.markdown-body pre'));
+        blocks.forEach(function (pre) {
+          var code = pre.querySelector('code');
+          if (!code) return;
+
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'code-copy-btn';
+          btn.textContent = 'Copy';
+          btn.setAttribute('aria-label', 'Copy code');
+
+          btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            var raw = code.textContent || '';
+            var resetLabel = function () {
+              btn.textContent = 'Copy';
+            };
+
+            if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) {
+              navigator.clipboard.writeText(raw).then(function () {
+                btn.textContent = 'Copied';
+                setTimeout(resetLabel, 1200);
+              }).catch(function () {
+                var ok = fallbackCopyText(raw);
+                btn.textContent = ok ? 'Copied' : 'Ctrl+C';
+                setTimeout(resetLabel, 1200);
+              });
+            } else {
+              var ok2 = fallbackCopyText(raw);
+              btn.textContent = ok2 ? 'Copied' : 'Ctrl+C';
+              setTimeout(resetLabel, 1200);
+            }
+          });
+
+          pre.appendChild(btn);
+        });
+      }
+
+      links.forEach(function (a) {
+        a.addEventListener('click', function () {
+          setActive(a);
+        });
+      });
+
+      if (filterInput) {
+        var filterTimer = null;
+        filterInput.addEventListener('input', function () {
+          if (filterTimer) clearTimeout(filterTimer);
+          filterTimer = setTimeout(function () {
+            applyFilter(filterInput.value);
+          }, 100);
+        });
+      }
+
+      setActive(map[0].link);
+      formatHttpSnippets();
+      setupCopyButtons();
+
+      var backToTop = document.getElementById('back-to-top');
+      if (!backToTop) return;
+
+      function updateBackToTop() {
+        if (window.scrollY > 600) backToTop.classList.add('show');
+        else backToTop.classList.remove('show');
+      }
+
+      backToTop.addEventListener('click', function () {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+
+      document.addEventListener('scroll', updateBackToTop, { passive: true });
+      updateBackToTop();
+    })();
+  </script>
+</body>
+</html>
+
+
