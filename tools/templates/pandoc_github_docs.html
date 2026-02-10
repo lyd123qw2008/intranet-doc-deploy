@@ -4,10 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>$if(title-prefix)$$title-prefix$ - $endif$$pagetitle$</title>
-  <link
-    rel="stylesheet"
-    href="https://cdn.jsdelivr.net/npm/github-markdown-css@5.8.1/github-markdown.min.css"
-  />
+  <style>
+__GITHUB_MARKDOWN_CSS_INLINE__
+  </style>
   $if(highlighting-css)$
   <style>
 $highlighting-css$
@@ -384,35 +383,35 @@ $highlighting-css$
       color: #ffa657 !important;
     }
 
-    html[data-theme='dark'] .http-method { color: #ff7b72; }
-    html[data-theme='dark'] .http-url { color: #79c0ff; }
-    html[data-theme='dark'] .http-header-key { color: #d2a8ff; }
-    html[data-theme='dark'] .http-header-val { color: #c9d1d9; }
-    html[data-theme='dark'] .http-placeholder {
+    html[data-theme='dark'] .markdown-body pre code .http-method { color: #ff7b72; }
+    html[data-theme='dark'] .markdown-body pre code .http-url { color: #79c0ff; }
+    html[data-theme='dark'] .markdown-body pre code .http-header-key { color: #d2a8ff; }
+    html[data-theme='dark'] .markdown-body pre code .http-header-val { color: #c9d1d9; }
+    html[data-theme='dark'] .markdown-body pre code .http-placeholder {
       color: #9ecbff;
       background: #1f2f46;
     }
 
-    .http-method {
+    .markdown-body pre code .http-method {
       color: #cf222e;
       font-weight: 700;
     }
 
-    .http-url {
+    .markdown-body pre code .http-url {
       color: #0969da;
       font-weight: 600;
     }
 
-    .http-header-key {
+    .markdown-body pre code .http-header-key {
       color: #6f42c1;
       font-weight: 600;
     }
 
-    .http-header-val {
+    .markdown-body pre code .http-header-val {
       color: #0a3069;
     }
 
-    .http-placeholder {
+    .markdown-body pre code .http-placeholder {
       color: #0550ae;
       background: #ddf4ff;
       border-radius: 4px;

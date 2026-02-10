@@ -55,6 +55,22 @@ def inject_local_pinyin_match(out_path: Path) -> None:
     out_path.write_text(html, encoding="utf-8")
 
 
+def inject_local_github_markdown_css(out_path: Path) -> None:
+    token = "__GITHUB_MARKDOWN_CSS_INLINE__"
+    html = out_path.read_text(encoding="utf-8", errors="ignore")
+    if token not in html:
+        return
+
+    vendor_path = Path(__file__).resolve().parent / "vendor" / "github-markdown.min.css"
+    if vendor_path.exists():
+        css = vendor_path.read_text(encoding="utf-8", errors="ignore")
+    else:
+        raise RuntimeError(f"missing required vendor css: {vendor_path}")
+
+    html = html.replace(token, css)
+    out_path.write_text(html, encoding="utf-8")
+
+
 def infer_code_lang(block_lines: list[str]) -> str:
     non_empty = [ln.strip() for ln in block_lines if ln.strip()]
     if not non_empty:
@@ -162,6 +178,7 @@ def main() -> None:
             toc_depth=args.toc_depth,
             highlight_style=args.highlight_style,
         )
+        inject_local_github_markdown_css(out_path)
         inject_local_pinyin_match(out_path)
     finally:
         try:
