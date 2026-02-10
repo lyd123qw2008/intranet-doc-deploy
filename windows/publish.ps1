@@ -16,66 +16,9 @@ function Require-Command([string]$cmd) {
     }
 }
 
-function Compress-WithRetry {
-    param(
-        [string]$Path,
-        [string]$Destination,
-        [int]$MaxAttempts = 5,
-        [int]$DelayMs = 800
-    )
-
-    for ($i = 1; $i -le $MaxAttempts; $i++) {
-        try {
-            Compress-Archive -Path $Path -DestinationPath $Destination -Force
-            return
-        } catch {
-            if ($i -eq $MaxAttempts) {
-                throw
-            }
-            Start-Sleep -Milliseconds $DelayMs
-        }
-    }
-}
-
-function Compress-NormalizedZip {
-    param(
-        [string]$SourceRoot,
-        [string]$Destination
-    )
-
-    Add-Type -AssemblyName System.IO.Compression
-    Add-Type -AssemblyName System.IO.Compression.FileSystem
-
-    if (Test-Path $Destination) {
-        Remove-Item $Destination -Force
-    }
-
-    $zip = [System.IO.Compression.ZipFile]::Open($Destination, [System.IO.Compression.ZipArchiveMode]::Create)
-    try {
-        $files = Get-ChildItem -Path $SourceRoot -Recurse -File
-        $root = [System.IO.Path]::GetFullPath($SourceRoot)
-        if (-not $root.EndsWith([System.IO.Path]::DirectorySeparatorChar)) {
-            $root += [System.IO.Path]::DirectorySeparatorChar
-        }
-        foreach ($f in $files) {
-            $full = [System.IO.Path]::GetFullPath($f.FullName)
-            if ($full.StartsWith($root, [System.StringComparison]::OrdinalIgnoreCase)) {
-                $rel = $full.Substring($root.Length)
-            }
-            else {
-                $rel = $f.Name
-            }
-            $entryName = $rel -replace '\\', '/'
-            [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $f.FullName, $entryName, [System.IO.Compression.CompressionLevel]::Optimal) | Out-Null
-        }
-    }
-    finally {
-        $zip.Dispose()
-    }
-}
-
 Require-Command "ssh"
 Require-Command "scp"
+Require-Command "tar"
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 if ([string]::IsNullOrWhiteSpace($SourceDir)) {
@@ -100,8 +43,8 @@ foreach ($p in $required) {
 
 $stamp = Get-Date -Format "yyyyMMddHHmmss"
 $tmpRoot = Join-Path $env:TEMP "intra-docs-$stamp"
-$bundle = Join-Path $env:TEMP "intra-docs-$stamp.zip"
-$remoteTmp = "/tmp/intra-docs-$stamp.zip"
+$bundle = Join-Path $env:TEMP "intra-docs-$stamp.tar.gz"
+$remoteTmp = "/tmp/intra-docs-$stamp.tar.gz"
 $sshTarget = "$ServerUser@$ServerHost"
 
 $scpArgs = @("-P", "$ServerPort")
@@ -121,7 +64,11 @@ try {
         Remove-Item $bundle -Force
     }
 
-    Compress-NormalizedZip -SourceRoot $tmpRoot -Destination $bundle
+    # Use tar.gz to preserve UTF-8 filenames across Windows -> Linux deploy.
+    & tar -C $tmpRoot -czf $bundle .
+    if ($LASTEXITCODE -ne 0) {
+        throw "tar create failed with exit code $LASTEXITCODE"
+    }
 
     Write-Host "Uploading bundle to $sshTarget ..."
     & scp @scpArgs $bundle "$sshTarget`:$remoteTmp"

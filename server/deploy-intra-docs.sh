@@ -2,11 +2,11 @@
 set -euo pipefail
 
 if [[ $# -lt 1 ]]; then
-  echo "Usage: $0 <bundle-zip>"
+  echo "Usage: $0 <bundle-file>"
   exit 1
 fi
 
-BUNDLE_ZIP="$1"
+BUNDLE_FILE="$1"
 BASE_DIR="/srv/intra-docs"
 RELEASES_DIR="${BASE_DIR}/releases"
 CURRENT_LINK="${BASE_DIR}/current"
@@ -26,22 +26,30 @@ compose() {
   fi
 }
 
-if [[ ! -f "${BUNDLE_ZIP}" ]]; then
-  echo "bundle file not found: ${BUNDLE_ZIP}"
+if [[ ! -f "${BUNDLE_FILE}" ]]; then
+  echo "bundle file not found: ${BUNDLE_FILE}"
   exit 1
 fi
 
 mkdir -p "${RELEASES_DIR}" "${RELEASE_DIR}"
 
-set +e
-unzip -q "${BUNDLE_ZIP}" -d "${RELEASE_DIR}"
-UNZIP_RC=$?
-set -e
-# unzip return code: 0=ok, 1=warnings (acceptable), >1=error
-if [[ ${UNZIP_RC} -gt 1 ]]; then
-  echo "unzip failed with code ${UNZIP_RC}"
+if [[ "${BUNDLE_FILE}" == *.tar.gz || "${BUNDLE_FILE}" == *.tgz ]]; then
+  tar -xzf "${BUNDLE_FILE}" -C "${RELEASE_DIR}"
+elif [[ "${BUNDLE_FILE}" == *.zip ]]; then
+  set +e
+  unzip -q "${BUNDLE_FILE}" -d "${RELEASE_DIR}"
+  UNZIP_RC=$?
+  set -e
+  # unzip return code: 0=ok, 1=warnings (acceptable), >1=error
+  if [[ ${UNZIP_RC} -gt 1 ]]; then
+    echo "unzip failed with code ${UNZIP_RC}"
+    rm -rf "${RELEASE_DIR}"
+    exit ${UNZIP_RC}
+  fi
+else
+  echo "unsupported bundle format: ${BUNDLE_FILE}"
   rm -rf "${RELEASE_DIR}"
-  exit ${UNZIP_RC}
+  exit 1
 fi
 
 for p in RCOS_API_DOC.html RCOS_API_DOC.assets 5gos_liuyd.html 5gos_liuyd.assets; do
