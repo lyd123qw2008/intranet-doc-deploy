@@ -60,6 +60,7 @@ powershell -ExecutionPolicy Bypass -File D:\liuyongdan\工作\intranet-doc-deploy\
 说明：
 - 目前默认打包格式为 `tar.gz`（优先解决 Windows 到 Linux 的中文文件名乱码问题）
 - 服务端解包脚本同时兼容历史 `zip` 包
+- 服务端默认仅保留最近 20 个发布版本（可通过环境变量 `KEEP_RELEASES` 调整）
 
 ## 3. 回滚
 

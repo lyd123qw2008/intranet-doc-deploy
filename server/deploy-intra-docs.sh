@@ -12,6 +12,7 @@ RELEASES_DIR="${BASE_DIR}/releases"
 CURRENT_LINK="${BASE_DIR}/current"
 TMP_LINK="${BASE_DIR}/.current.$$"
 COMPOSE_FILE="/opt/intra-docs/docker-compose.yml"
+KEEP_RELEASES="${KEEP_RELEASES:-20}"
 STAMP="$(date +%Y%m%d%H%M%S)"
 RELEASE_DIR="${RELEASES_DIR}/${STAMP}"
 
@@ -71,6 +72,23 @@ if docker ps --format '{{.Names}}' | grep -qx 'intra-docs-nginx'; then
   docker exec intra-docs-nginx nginx -s reload
 else
   compose up -d
+fi
+
+# Keep recent releases only (default: 20) to avoid unbounded disk growth.
+if [[ "${KEEP_RELEASES}" =~ ^[0-9]+$ ]] && [[ "${KEEP_RELEASES}" -ge 1 ]]; then
+  CURRENT_REAL="$(readlink -f "${CURRENT_LINK}" 2>/dev/null || true)"
+  mapfile -t ALL_RELEASES < <(find "${RELEASES_DIR}" -mindepth 1 -maxdepth 1 -type d | sort)
+  RELEASE_COUNT="${#ALL_RELEASES[@]}"
+  if [[ "${RELEASE_COUNT}" -gt "${KEEP_RELEASES}" ]]; then
+    REMOVE_COUNT=$((RELEASE_COUNT - KEEP_RELEASES))
+    for ((i=0; i<REMOVE_COUNT; i++)); do
+      OLD="${ALL_RELEASES[$i]}"
+      if [[ -n "${CURRENT_REAL}" && "${OLD}" == "${CURRENT_REAL}" ]]; then
+        continue
+      fi
+      rm -rf "${OLD}"
+    done
+  fi
 fi
 
 echo "Deploy success: ${RELEASE_DIR}"
