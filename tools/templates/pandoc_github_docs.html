@@ -101,6 +101,12 @@ $highlighting-css$
       margin-bottom: 10px;
     }
 
+    .toc-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     .theme-toggle {
       height: 26px;
       border: 1px solid var(--line);
@@ -114,6 +120,48 @@ $highlighting-css$
 
     .theme-toggle:hover {
       background: var(--btn-hover);
+    }
+
+    .sidebar-toggle {
+      min-width: 58px;
+    }
+
+    body.sidebar-collapsed .layout {
+      grid-template-columns: 1fr;
+      gap: 0;
+      padding-left: 0;
+    }
+
+    body.sidebar-collapsed .toc-panel {
+      display: none;
+    }
+
+    .sidebar-expand-fab {
+      position: fixed;
+      left: 12px;
+      top: 12px;
+      width: 34px;
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--btn-bg);
+      color: var(--text);
+      font-size: 16px;
+      line-height: 1;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      z-index: 1001;
+    }
+
+    .sidebar-expand-fab:hover {
+      background: var(--btn-hover);
+    }
+
+    body.sidebar-collapsed .sidebar-expand-fab {
+      display: inline-flex;
     }
 
     .toc-filter {
@@ -541,6 +589,11 @@ $highlighting-css$
         right: 12px;
         bottom: 12px;
       }
+
+      .sidebar-expand-fab {
+        left: 10px;
+        top: 10px;
+      }
     }
   </style>
   $for(header-includes)$
@@ -554,7 +607,10 @@ $highlighting-css$
       <nav id="$idprefix$TOC" role="doc-toc">
         <div class="toc-head">
           <h2>Contents</h2>
-          <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">Dark</button>
+          <div class="toc-actions">
+            <button id="sidebar-toggle" class="theme-toggle sidebar-toggle" type="button" aria-label="Collapse sidebar">Hide</button>
+            <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">Dark</button>
+          </div>
         </div>
         <input id="toc-filter" class="toc-filter" type="text" placeholder="Filter headings..." />
         $table-of-contents$
@@ -567,6 +623,7 @@ $highlighting-css$
       </article>
     </main>
   </div>
+    <button id="sidebar-expand-fab" class="sidebar-expand-fab" type="button" aria-label="Expand sidebar">☰</button>
     <button id="back-to-top" class="back-to-top" type="button" aria-label="Back to top">↑</button>
   <script>
 __PINYIN_MATCH_INLINE__
@@ -619,6 +676,8 @@ __PINYIN_MATCH_INLINE__
       var tocRoot = document.getElementById('TOC');
       var filterInput = document.getElementById('toc-filter');
       var themeToggle = document.getElementById('theme-toggle');
+      var sidebarToggle = document.getElementById('sidebar-toggle');
+      var sidebarExpandFab = document.getElementById('sidebar-expand-fab');
       var prefersDark = false;
       try {
         prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -627,10 +686,38 @@ __PINYIN_MATCH_INLINE__
       }
 
       var root = document.documentElement;
+      var body = document.body;
       var storedTheme = '';
       try { storedTheme = localStorage.getItem('doc-theme') || ''; } catch (e) { storedTheme = ''; }
       if (storedTheme === 'dark' || (storedTheme !== 'light' && prefersDark)) {
         root.setAttribute('data-theme', 'dark');
+      }
+
+      var prefersCollapsedSidebar = false;
+      try {
+        prefersCollapsedSidebar = window.matchMedia && window.matchMedia('(max-width: 960px)').matches;
+      } catch (e) {
+        prefersCollapsedSidebar = false;
+      }
+      var storedSidebar = '';
+      try { storedSidebar = localStorage.getItem('doc-sidebar') || ''; } catch (e) { storedSidebar = ''; }
+      if (storedSidebar === 'collapsed' || (storedSidebar !== 'expanded' && prefersCollapsedSidebar)) {
+        body.classList.add('sidebar-collapsed');
+      }
+
+      function refreshSidebarLabel() {
+        if (sidebarToggle) {
+          var collapsed = body.classList.contains('sidebar-collapsed');
+          sidebarToggle.textContent = collapsed ? 'Show' : 'Hide';
+          sidebarToggle.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+        }
+      }
+
+      function setSidebarCollapsed(collapsed) {
+        if (collapsed) body.classList.add('sidebar-collapsed');
+        else body.classList.remove('sidebar-collapsed');
+        try { localStorage.setItem('doc-sidebar', collapsed ? 'collapsed' : 'expanded'); } catch (e) {}
+        refreshSidebarLabel();
       }
 
       function refreshThemeLabel() {
@@ -638,6 +725,7 @@ __PINYIN_MATCH_INLINE__
         themeToggle.textContent = root.getAttribute('data-theme') === 'dark' ? 'Light' : 'Dark';
       }
       refreshThemeLabel();
+      refreshSidebarLabel();
 
       if (themeToggle) {
         themeToggle.addEventListener('click', function () {
@@ -646,6 +734,18 @@ __PINYIN_MATCH_INLINE__
           else root.setAttribute('data-theme', 'dark');
           try { localStorage.setItem('doc-theme', dark ? 'light' : 'dark'); } catch (e) {}
           refreshThemeLabel();
+        });
+      }
+
+      if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', function () {
+          setSidebarCollapsed(!body.classList.contains('sidebar-collapsed'));
+        });
+      }
+
+      if (sidebarExpandFab) {
+        sidebarExpandFab.addEventListener('click', function () {
+          setSidebarCollapsed(false);
         });
       }
 
