@@ -5,7 +5,12 @@ param(
     [string]$ServerUser = "deploy",
     [int]$ServerPort = 22,
     [string]$SshKeyPath = "",
-    [string]$SourceDir = ""
+    [string]$SourceDir = "",
+    [switch]$BuildHtml,
+    [switch]$SkipBuildHtml,
+    [ValidateSet('pandoc-github')]
+    [string]$HtmlRenderer = 'pandoc-github',
+    [string]$HtmlHighlightStyle = 'pygments'
 )
 
 $ErrorActionPreference = "Stop"
@@ -14,6 +19,21 @@ function Require-Command([string]$cmd) {
     if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) {
         throw "Command not found: $cmd"
     }
+}
+
+function Ensure-PandocPath {
+    if (Get-Command 'pandoc' -ErrorAction SilentlyContinue) {
+        return
+    }
+
+    $localPandocDir = Join-Path $ScriptDir '..\tools\pandoc'
+    $localPandocExe = Join-Path $localPandocDir 'pandoc.exe'
+    if (Test-Path $localPandocExe) {
+        $env:PATH = "$localPandocDir;$env:PATH"
+        return
+    }
+
+    throw "Pandoc not found. Install pandoc or place pandoc.exe at: $localPandocExe"
 }
 
 Require-Command "ssh"
@@ -25,6 +45,45 @@ if ([string]::IsNullOrWhiteSpace($SourceDir)) {
     $SourceDir = (Resolve-Path (Join-Path $ScriptDir "..\..")).Path
 } else {
     $SourceDir = (Resolve-Path $SourceDir).Path
+}
+
+if ($BuildHtml -and $SkipBuildHtml) {
+    throw "BuildHtml and SkipBuildHtml cannot be used together."
+}
+
+$shouldBuildHtml = $BuildHtml -or (-not $SkipBuildHtml)
+if ($shouldBuildHtml) {
+    Require-Command "python"
+    Ensure-PandocPath
+
+    $builder = Join-Path $ScriptDir "..\tools\build_html_with_pandoc_template.py"
+    $template = Join-Path $ScriptDir "..\tools\templates\pandoc_github_docs.html"
+    if (-not (Test-Path $builder)) {
+        throw "Builder script not found: $builder"
+    }
+    if (-not (Test-Path $template)) {
+        throw "Template file not found: $template"
+    }
+
+    $jobs = @(
+        @{ Md = "RCOS_API_DOC.md"; Html = "RCOS_API_DOC.html"; Title = "RCOS API DOC" },
+        @{ Md = "5gos_liuyd.md"; Html = "5gos_liuyd.html"; Title = "5gos liuyd" }
+    )
+
+    foreach ($j in $jobs) {
+        $mdPath = Join-Path $SourceDir $j.Md
+        $htmlPath = Join-Path $SourceDir $j.Html
+
+        if (-not (Test-Path $mdPath)) {
+            throw "Markdown file not found: $mdPath"
+        }
+
+        Write-Host "Building HTML with Pandoc + GitHub style: $($j.Md) -> $($j.Html)"
+        & python $builder --md $mdPath --out $htmlPath --title $j.Title --template $template --toc-depth 3 --highlight-style $HtmlHighlightStyle
+        if ($LASTEXITCODE -ne 0) {
+            throw "build html failed: $mdPath"
+        }
+    }
 }
 
 $required = @(

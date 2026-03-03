@@ -4,6 +4,67 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>$if(title-prefix)$$title-prefix$ - $endif$$pagetitle$</title>
+  <script>
+    (function () {
+      var root = document.documentElement;
+      root.classList.add('sidebar-init-pending');
+      try {
+        var storedSidebar = localStorage.getItem('doc-sidebar') || '';
+        if (storedSidebar === 'collapsed') {
+          root.classList.add('sidebar-collapsed');
+        } else {
+          root.classList.remove('sidebar-collapsed');
+        }
+      } catch (e) {
+        root.classList.remove('sidebar-collapsed');
+      }
+    })();
+  </script>
+  <style>
+    /* Critical sidebar/layout CSS */
+    .layout {
+      width: 100%;
+      max-width: none;
+      margin: 0;
+      padding: 16px 20px 16px 0;
+      display: grid;
+      grid-template-columns: 240px minmax(0, 1fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    html.sidebar-init-pending .layout {
+      opacity: 0;
+    }
+
+    html.sidebar-init-ready .layout {
+      opacity: 1;
+      transition: opacity 90ms ease-out;
+    }
+
+    .toc-panel {
+      display: block;
+    }
+
+    .sidebar-expand-fab { display: none; }
+
+    html.sidebar-collapsed .layout,
+    body.sidebar-collapsed .layout {
+      grid-template-columns: 1fr;
+      gap: 0;
+      padding-left: 0;
+    }
+
+    html.sidebar-collapsed .toc-panel,
+    body.sidebar-collapsed .toc-panel {
+      display: none;
+    }
+
+    html.sidebar-collapsed .sidebar-expand-fab,
+    body.sidebar-collapsed .sidebar-expand-fab {
+      display: inline-flex;
+    }
+  </style>
   <style>
 __GITHUB_MARKDOWN_CSS_INLINE__
   </style>
@@ -126,16 +187,6 @@ $highlighting-css$
       min-width: 58px;
     }
 
-    body.sidebar-collapsed .layout {
-      grid-template-columns: 1fr;
-      gap: 0;
-      padding-left: 0;
-    }
-
-    body.sidebar-collapsed .toc-panel {
-      display: none;
-    }
-
     .sidebar-expand-fab {
       position: fixed;
       left: 12px;
@@ -158,10 +209,6 @@ $highlighting-css$
 
     .sidebar-expand-fab:hover {
       background: var(--btn-hover);
-    }
-
-    body.sidebar-collapsed .sidebar-expand-fab {
-      display: inline-flex;
     }
 
     .toc-filter {
@@ -243,7 +290,7 @@ $highlighting-css$
       text-align: center;
     }
 
-    #TOC li.collapsed > ul {
+    #TOC li > ul {
       display: none;
     }
 
@@ -251,7 +298,15 @@ $highlighting-css$
       display: none !important;
     }
 
-    #TOC li:not(.collapsed) > .toc-toggle {
+    #TOC > ul {
+      display: block;
+    }
+
+    #TOC li.expanded > ul {
+      display: block;
+    }
+
+    #TOC li.expanded > .toc-toggle {
       transform: rotate(90deg);
     }
 
@@ -628,19 +683,32 @@ $highlighting-css$
   <script>
 __PINYIN_MATCH_INLINE__
   </script>
+  <noscript>
+    <style>
+      #TOC li > ul {
+        display: block !important;
+      }
+    </style>
+  </noscript>
   <script>
     (function () {
-      var links = Array.prototype.slice.call(document.querySelectorAll('#TOC a[href^="#"]'));
-      if (!links.length) return;
+      var root = document.documentElement;
+      var body = document.body;
+      var sidebarInitReady = false;
+      function markSidebarInitReady() {
+        if (sidebarInitReady) return;
+        root.classList.remove('sidebar-init-pending');
+        root.classList.add('sidebar-init-ready');
+        sidebarInitReady = true;
+      }
 
+      var links = Array.prototype.slice.call(document.querySelectorAll('#TOC a[href^="#"]'));
       var map = links
         .map(function (a) {
           var id = decodeURIComponent((a.getAttribute('href') || '').slice(1));
           return { link: a, target: document.getElementById(id) };
         })
         .filter(function (x) { return x.target; });
-
-      if (!map.length) return;
 
       function setActive(link) {
         links.forEach(function (a) { a.classList.remove('active'); });
@@ -678,6 +746,10 @@ __PINYIN_MATCH_INLINE__
       var themeToggle = document.getElementById('theme-toggle');
       var sidebarToggle = document.getElementById('sidebar-toggle');
       var sidebarExpandFab = document.getElementById('sidebar-expand-fab');
+      var tocFilterActive = false;
+      var tocSaveTimer = null;
+      var tocLiByHref = Object.create(null);
+      var tocStateKey = 'doc-toc-expanded:' + (window.location && window.location.pathname ? window.location.pathname : '');
       var prefersDark = false;
       try {
         prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -685,24 +757,16 @@ __PINYIN_MATCH_INLINE__
         prefersDark = false;
       }
 
-      var root = document.documentElement;
-      var body = document.body;
       var storedTheme = '';
       try { storedTheme = localStorage.getItem('doc-theme') || ''; } catch (e) { storedTheme = ''; }
       if (storedTheme === 'dark' || (storedTheme !== 'light' && prefersDark)) {
         root.setAttribute('data-theme', 'dark');
       }
 
-      var prefersCollapsedSidebar = false;
-      try {
-        prefersCollapsedSidebar = window.matchMedia && window.matchMedia('(max-width: 960px)').matches;
-      } catch (e) {
-        prefersCollapsedSidebar = false;
-      }
-      var storedSidebar = '';
-      try { storedSidebar = localStorage.getItem('doc-sidebar') || ''; } catch (e) { storedSidebar = ''; }
-      if (storedSidebar === 'collapsed' || (storedSidebar !== 'expanded' && prefersCollapsedSidebar)) {
+      if (root.classList.contains('sidebar-collapsed')) {
         body.classList.add('sidebar-collapsed');
+      } else {
+        body.classList.remove('sidebar-collapsed');
       }
 
       function refreshSidebarLabel() {
@@ -714,10 +778,76 @@ __PINYIN_MATCH_INLINE__
       }
 
       function setSidebarCollapsed(collapsed) {
-        if (collapsed) body.classList.add('sidebar-collapsed');
-        else body.classList.remove('sidebar-collapsed');
+        if (collapsed) {
+          root.classList.add('sidebar-collapsed');
+          body.classList.add('sidebar-collapsed');
+        } else {
+          root.classList.remove('sidebar-collapsed');
+          body.classList.remove('sidebar-collapsed');
+        }
         try { localStorage.setItem('doc-sidebar', collapsed ? 'collapsed' : 'expanded'); } catch (e) {}
         refreshSidebarLabel();
+      }
+
+      function clearAllTocExpanded() {
+        if (!tocRoot) return;
+        Array.prototype.slice.call(tocRoot.querySelectorAll('li.expanded')).forEach(function (li) {
+          li.classList.remove('expanded');
+        });
+      }
+
+      function loadTocExpandedState() {
+        var raw = '';
+        try {
+          raw = localStorage.getItem(tocStateKey) || '[]';
+        } catch (e) {
+          return [];
+        }
+
+        try {
+          var parsed = JSON.parse(raw);
+          if (!Array.isArray(parsed)) return [];
+          return parsed.filter(function (x) { return typeof x === 'string' && x.charAt(0) === '#'; });
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function applyTocExpandedState(ids) {
+        if (!tocRoot) return;
+        clearAllTocExpanded();
+        ids.forEach(function (href) {
+          var li = tocLiByHref[href];
+          if (li) li.classList.add('expanded');
+        });
+      }
+
+      function collectTocExpandedState() {
+        if (!tocRoot) return [];
+        var hrefs = [];
+        Array.prototype.slice.call(tocRoot.querySelectorAll('li.expanded')).forEach(function (li) {
+          var a = directChild(li, 'a');
+          if (!a) return;
+          var href = (a.getAttribute('href') || '').trim();
+          if (!href || href.charAt(0) !== '#') return;
+          hrefs.push(href);
+        });
+        return hrefs;
+      }
+
+      function saveTocExpandedStateNow() {
+        if (!tocRoot || tocFilterActive) return;
+        try {
+          localStorage.setItem(tocStateKey, JSON.stringify(collectTocExpandedState()));
+        } catch (e) {}
+      }
+
+      function scheduleSaveTocExpandedState() {
+        if (!tocRoot || tocFilterActive) return;
+        if (tocSaveTimer) clearTimeout(tocSaveTimer);
+        tocSaveTimer = setTimeout(function () {
+          saveTocExpandedStateNow();
+        }, 120);
       }
 
       function refreshThemeLabel() {
@@ -757,7 +887,10 @@ __PINYIN_MATCH_INLINE__
           if (!child || !anchor) return;
 
           li.classList.add('has-children');
-          li.classList.add('collapsed');
+          var href = (anchor.getAttribute('href') || '').trim();
+          if (href && href.charAt(0) === '#' && !tocLiByHref[href]) {
+            tocLiByHref[href] = li;
+          }
 
           var btn = document.createElement('button');
           btn.type = 'button';
@@ -767,18 +900,21 @@ __PINYIN_MATCH_INLINE__
           btn.addEventListener('click', function (e) {
             e.preventDefault();
             e.stopPropagation();
-            li.classList.toggle('collapsed');
+            li.classList.toggle('expanded');
+            scheduleSaveTocExpandedState();
           });
 
           li.insertBefore(btn, anchor);
         });
+
+        applyTocExpandedState(loadTocExpandedState());
       }
 
       function showNodeWithContext(li) {
         var n = li;
         while (n && n.tagName && n.tagName.toLowerCase() === 'li') {
           n.classList.remove('toc-hidden');
-          n.classList.remove('collapsed');
+          n.classList.add('expanded');
           n = n.parentElement ? n.parentElement.closest('li') : null;
         }
       }
@@ -789,14 +925,18 @@ __PINYIN_MATCH_INLINE__
         var items = Array.prototype.slice.call(tocRoot.querySelectorAll('li'));
 
         if (!q) {
+          tocFilterActive = false;
           items.forEach(function (li) {
             li.classList.remove('toc-hidden');
           });
+          applyTocExpandedState(loadTocExpandedState());
           return;
         }
 
+        tocFilterActive = true;
         items.forEach(function (li) {
           li.classList.add('toc-hidden');
+          li.classList.remove('expanded');
         });
 
         items.forEach(function (li) {
@@ -950,9 +1090,12 @@ __PINYIN_MATCH_INLINE__
         });
       }
 
-      setActive(map[0].link);
+      if (map.length) {
+        setActive(map[0].link);
+      }
       formatHttpSnippets();
       setupCopyButtons();
+      markSidebarInitReady();
 
       var backToTop = document.getElementById('back-to-top');
       if (!backToTop) return;
