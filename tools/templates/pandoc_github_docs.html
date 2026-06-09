@@ -162,6 +162,13 @@ $highlighting-css$
       margin: 0 6px 14px;
     }
 
+    .toc-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex: 0 0 auto;
+    }
+
     .quick-menu-button,
     .quick-menu-item {
       height: 26px;
@@ -590,19 +597,15 @@ $highlighting-css$
     }
 
     .quick-menu {
-      display: flex;
-      justify-content: flex-end;
-      max-width: 980px;
-      margin: 0 auto 18px;
-      position: sticky;
-      top: 12px;
+      position: relative;
+      display: inline-flex;
       z-index: 20;
     }
 
     .quick-menu-panel {
       display: none;
       position: absolute;
-      top: 36px;
+      top: 32px;
       right: 0;
       flex-direction: column;
       gap: 8px;
@@ -619,8 +622,67 @@ $highlighting-css$
 
     .quick-menu-toggle {
       min-width: 74px;
-      height: 30px;
       font-weight: 600;
+    }
+
+    .sidebar-toggle {
+      min-width: 48px;
+      font-weight: 600;
+    }
+
+    .sidebar-expand-fab {
+      display: none;
+      position: fixed;
+      top: 14px;
+      left: 14px;
+      z-index: 60;
+      height: 30px;
+      min-width: 56px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 0 10px;
+      background: var(--btn-bg);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 600;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+    }
+
+    html.sidebar-collapsed .sidebar-expand-fab,
+    body.sidebar-collapsed .sidebar-expand-fab {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .back-to-top {
+      display: none;
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 60;
+      width: 44px;
+      height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--btn-bg);
+      color: var(--text);
+      font-size: 22px;
+      line-height: 1;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+    }
+
+    .back-to-top.show {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .back-to-top:hover,
+    .sidebar-expand-fab:hover {
+      background: var(--btn-hover);
     }
 
     @media (max-width: 960px) {
@@ -640,8 +702,9 @@ $highlighting-css$
         padding: 28px 20px 72px;
       }
 
-      .quick-menu {
-        margin-bottom: 14px;
+      .back-to-top {
+        right: 12px;
+        bottom: 12px;
       }
 
     }
@@ -657,6 +720,16 @@ $highlighting-css$
       <nav id="$idprefix$TOC" role="doc-toc">
         <div class="toc-head">
           <h2>Contents</h2>
+          <div class="toc-actions">
+            <button id="sidebar-toggle" class="quick-menu-button sidebar-toggle" type="button" aria-label="Collapse sidebar">Hide</button>
+            <div id="quick-menu" class="quick-menu">
+              <button id="quick-menu-toggle" class="quick-menu-button quick-menu-toggle" type="button" aria-label="Toggle page actions">Actions</button>
+              <div id="quick-menu-panel" class="quick-menu-panel" aria-label="Page actions">
+                <a id="source-md-link" class="quick-menu-item is-hidden" href="#" download aria-label="Download source markdown">MD</a>
+                <button id="quick-theme" class="quick-menu-item" type="button" aria-label="Toggle theme">Dark</button>
+              </div>
+            </div>
+          </div>
         </div>
         <input id="toc-filter" class="toc-filter" type="text" placeholder="Filter headings..." />
         $table-of-contents$
@@ -664,20 +737,15 @@ $highlighting-css$
     </aside>
     $endif$
     <main class="doc-panel">
-      <div id="quick-menu" class="quick-menu">
-        <button id="quick-menu-toggle" class="quick-menu-button quick-menu-toggle" type="button" aria-label="Toggle page actions">Actions</button>
-        <div id="quick-menu-panel" class="quick-menu-panel" aria-label="Page actions">
-          <a id="source-md-link" class="quick-menu-item is-hidden" href="#" download aria-label="Download source markdown">MD</a>
-          <button id="quick-top" class="quick-menu-item" type="button" aria-label="Back to top">Top</button>
-          <button id="quick-sidebar" class="quick-menu-item" type="button" aria-label="Toggle sidebar">Side</button>
-          <button id="quick-theme" class="quick-menu-item" type="button" aria-label="Toggle theme">Dark</button>
-        </div>
-      </div>
       <article class="markdown-body">
         $body$
       </article>
     </main>
   </div>
+  $if(toc)$
+  <button id="sidebar-expand-fab" class="sidebar-expand-fab" type="button" aria-label="Expand sidebar">Show</button>
+  $endif$
+  <button id="back-to-top" class="back-to-top" type="button" aria-label="Back to top">&uarr;</button>
   <script>
 __PINYIN_MATCH_INLINE__
   </script>
@@ -766,8 +834,9 @@ __PINYIN_MATCH_INLINE__
       var quickMenu = document.getElementById('quick-menu');
       var quickMenuToggle = document.getElementById('quick-menu-toggle');
       var quickTheme = document.getElementById('quick-theme');
-      var quickSidebar = document.getElementById('quick-sidebar');
-      var quickTop = document.getElementById('quick-top');
+      var sidebarToggle = document.getElementById('sidebar-toggle');
+      var sidebarExpandFab = document.getElementById('sidebar-expand-fab');
+      var backToTop = document.getElementById('back-to-top');
       var tocFilterActive = false;
       var tocSaveTimer = null;
       var tocLiByHref = Object.create(null);
@@ -792,10 +861,10 @@ __PINYIN_MATCH_INLINE__
       }
 
       function refreshSidebarLabel() {
-        if (!quickSidebar) return;
+        if (!sidebarToggle) return;
         var collapsed = body.classList.contains('sidebar-collapsed');
-        quickSidebar.textContent = collapsed ? 'Show' : 'Hide';
-        quickSidebar.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+        sidebarToggle.textContent = collapsed ? 'Show' : 'Hide';
+        sidebarToggle.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
       }
 
       function setSidebarCollapsed(collapsed) {
@@ -889,18 +958,31 @@ __PINYIN_MATCH_INLINE__
         });
       }
 
-      if (quickSidebar) {
-        quickSidebar.addEventListener('click', function () {
+      if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', function () {
           setSidebarCollapsed(!body.classList.contains('sidebar-collapsed'));
           closeQuickMenu();
         });
       }
 
-      if (quickTop) {
-        quickTop.addEventListener('click', function () {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-          closeQuickMenu();
+      if (sidebarExpandFab) {
+        sidebarExpandFab.addEventListener('click', function () {
+          setSidebarCollapsed(false);
         });
+      }
+
+      function updateBackToTop() {
+        if (!backToTop) return;
+        if (window.scrollY > 600) backToTop.classList.add('show');
+        else backToTop.classList.remove('show');
+      }
+
+      if (backToTop) {
+        backToTop.addEventListener('click', function () {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        window.addEventListener('scroll', updateBackToTop, { passive: true });
+        updateBackToTop();
       }
 
       if (sourceMdLink) {
