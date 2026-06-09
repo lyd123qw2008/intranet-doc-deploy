@@ -730,7 +730,7 @@ $highlighting-css$
             <div id="quick-menu" class="quick-menu">
               <button id="quick-menu-toggle" class="quick-menu-button quick-menu-toggle" type="button" aria-label="Toggle page actions">Actions</button>
               <div id="quick-menu-panel" class="quick-menu-panel" aria-label="Page actions">
-                <a id="source-md-link" class="quick-menu-item is-hidden" href="#" download aria-label="Download source markdown">MD</a>
+                <button id="source-md-link" class="quick-menu-item is-hidden" type="button" aria-label="Download source markdown">MD</button>
                 <button id="quick-theme" class="quick-menu-item" type="button" aria-label="Toggle theme">Dark</button>
               </div>
             </div>
@@ -783,14 +783,12 @@ __PINYIN_MATCH_INLINE__
         var mdPath = pathname.slice(0, pathname.length - suffixLength) + '.md';
         var filename = decodeURIComponent(mdPath.split('/').pop() || 'source.md');
 
-        [sourceMdLink].forEach(function (link) {
-          if (!link) return;
-          link.href = mdPath;
-          link.setAttribute('download', filename);
-          link.setAttribute('title', 'Download ' + filename);
-          link.classList.remove('is-hidden');
-          link.classList.add('show');
-        });
+        if (!sourceMdLink) return;
+        sourceMdLink.setAttribute('data-href', mdPath);
+        sourceMdLink.setAttribute('data-filename', filename);
+        sourceMdLink.setAttribute('title', 'Download ' + filename);
+        sourceMdLink.classList.remove('is-hidden');
+        sourceMdLink.classList.add('show');
       }
 
       setupSourceMarkdownLink();
@@ -992,6 +990,15 @@ __PINYIN_MATCH_INLINE__
 
       if (sourceMdLink) {
         sourceMdLink.addEventListener('click', function () {
+          var href = sourceMdLink.getAttribute('data-href') || '';
+          if (href) {
+            var a = document.createElement('a');
+            a.href = href;
+            a.download = sourceMdLink.getAttribute('data-filename') || 'source.md';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+          }
           closeQuickMenu();
         });
       }
