@@ -53,7 +53,7 @@ else
   exit 1
 fi
 
-for p in RCOS_API_DOC.html RCOS_API_DOC.assets 5gos_liuyd.html 5gos_liuyd.assets; do
+for p in RCOS_API_DOC.html RCOS_API_DOC.md RCOS_API_DOC.assets 5gos_liuyd.html 5gos_liuyd.md 5gos_liuyd.assets; do
   if [[ ! -e "${RELEASE_DIR}/${p}" ]]; then
     echo "missing required path in bundle: ${p}"
     rm -rf "${RELEASE_DIR}"

@@ -10,8 +10,10 @@
 
 涉及文件：
 - `RCOS_API_DOC.html`
+- `RCOS_API_DOC.md`
 - `RCOS_API_DOC.assets/`
 - `5gos_liuyd.html`
+- `5gos_liuyd.md`
 - `5gos_liuyd.assets/`
 
 ## 1. 服务器初始化（只做一次）
@@ -61,6 +63,7 @@ powershell -ExecutionPolicy Bypass -File D:\liuyongdan\工作\intranet-doc-deploy\
 - 目前默认打包格式为 `tar.gz`（优先解决 Windows 到 Linux 的中文文件名乱码问题）
 - 服务端解包脚本同时兼容历史 `zip` 包
 - 服务端默认仅保留最近 20 个发布版本（可通过环境变量 `KEEP_RELEASES` 调整）
+- Source Markdown files (`.md`) are published with generated HTML for frontend handoff, local search, and AI-agent processing.
 
 ## 3. 回滚
 

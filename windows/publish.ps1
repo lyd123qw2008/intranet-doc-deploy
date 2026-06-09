@@ -88,8 +88,10 @@ if ($shouldBuildHtml) {
 
 $required = @(
     "RCOS_API_DOC.html",
+    "RCOS_API_DOC.md",
     "RCOS_API_DOC.assets",
     "5gos_liuyd.html",
+    "5gos_liuyd.md",
     "5gos_liuyd.assets"
 )
 

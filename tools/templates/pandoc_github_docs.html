@@ -46,8 +46,6 @@
       display: block;
     }
 
-    .sidebar-expand-fab { display: none; }
-
     html.sidebar-collapsed .layout,
     body.sidebar-collapsed .layout {
       grid-template-columns: 1fr;
@@ -60,10 +58,6 @@
       display: none;
     }
 
-    html.sidebar-collapsed .sidebar-expand-fab,
-    body.sidebar-collapsed .sidebar-expand-fab {
-      display: inline-flex;
-    }
   </style>
   <style>
 __GITHUB_MARKDOWN_CSS_INLINE__
@@ -162,13 +156,8 @@ $highlighting-css$
       margin-bottom: 10px;
     }
 
-    .toc-actions {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .theme-toggle {
+    .quick-menu-button,
+    .quick-menu-item {
       height: 26px;
       border: 1px solid var(--line);
       border-radius: 6px;
@@ -179,36 +168,28 @@ $highlighting-css$
       cursor: pointer;
     }
 
-    .theme-toggle:hover {
+    .quick-menu-button:hover,
+    .quick-menu-item:hover {
       background: var(--btn-hover);
     }
 
-    .sidebar-toggle {
-      min-width: 58px;
-    }
-
-    .sidebar-expand-fab {
-      position: fixed;
-      left: 12px;
-      top: 12px;
-      width: 34px;
-      height: 34px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--btn-bg);
-      color: var(--text);
-      font-size: 16px;
-      line-height: 1;
-      display: none;
+    .quick-menu-item {
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      cursor: pointer;
-      box-shadow: var(--shadow);
-      z-index: 1001;
+      min-width: 64px;
+      color: var(--text);
+      font-weight: 600;
+      text-decoration: none;
     }
 
-    .sidebar-expand-fab:hover {
-      background: var(--btn-hover);
+    .quick-menu-item:hover {
+      color: var(--brand);
+      text-decoration: none;
+    }
+
+    .quick-menu-item.is-hidden {
+      display: none;
     }
 
     .toc-filter {
@@ -601,33 +582,38 @@ $highlighting-css$
       background: var(--btn-hover);
     }
 
-    .back-to-top {
+    .quick-menu {
       position: fixed;
       right: 18px;
       bottom: 18px;
-      width: 44px;
-      height: 44px;
-      border: 1px solid #d0d7de;
-      border-radius: 999px;
-      background: var(--btn-bg);
-      color: var(--text);
-      font-size: 20px;
-      line-height: 1;
-      display: none;
+      display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: center;
-      cursor: pointer;
+      gap: 8px;
+      z-index: 1001;
+    }
+
+    .quick-menu-panel {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
       box-shadow: var(--shadow);
-      z-index: 1000;
     }
 
-    .back-to-top:hover {
-      background: var(--btn-hover);
-      border-color: var(--line);
+    .quick-menu.open .quick-menu-panel {
+      display: flex;
     }
 
-    .back-to-top.show {
-      display: inline-flex;
+    .quick-menu-toggle {
+      width: 52px;
+      height: 44px;
+      border-radius: 999px;
+      font-weight: 600;
+      box-shadow: var(--shadow);
     }
 
     @media (max-width: 960px) {
@@ -640,15 +626,11 @@ $highlighting-css$
         max-height: none;
       }
 
-      .back-to-top {
+      .quick-menu {
         right: 12px;
         bottom: 12px;
       }
 
-      .sidebar-expand-fab {
-        left: 10px;
-        top: 10px;
-      }
     }
   </style>
   $for(header-includes)$
@@ -662,10 +644,6 @@ $highlighting-css$
       <nav id="$idprefix$TOC" role="doc-toc">
         <div class="toc-head">
           <h2>Contents</h2>
-          <div class="toc-actions">
-            <button id="sidebar-toggle" class="theme-toggle sidebar-toggle" type="button" aria-label="Collapse sidebar">Hide</button>
-            <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">Dark</button>
-          </div>
         </div>
         <input id="toc-filter" class="toc-filter" type="text" placeholder="Filter headings..." />
         $table-of-contents$
@@ -678,8 +656,15 @@ $highlighting-css$
       </article>
     </main>
   </div>
-    <button id="sidebar-expand-fab" class="sidebar-expand-fab" type="button" aria-label="Expand sidebar">☰</button>
-    <button id="back-to-top" class="back-to-top" type="button" aria-label="Back to top">↑</button>
+    <div id="quick-menu" class="quick-menu">
+      <div id="quick-menu-panel" class="quick-menu-panel" aria-label="Quick actions">
+        <a id="source-md-link" class="quick-menu-item is-hidden" href="#" download aria-label="Download source markdown">MD</a>
+        <button id="quick-top" class="quick-menu-item" type="button" aria-label="Back to top">Top</button>
+        <button id="quick-sidebar" class="quick-menu-item" type="button" aria-label="Toggle sidebar">Side</button>
+        <button id="quick-theme" class="quick-menu-item" type="button" aria-label="Toggle theme">Dark</button>
+      </div>
+      <button id="quick-menu-toggle" class="quick-menu-button quick-menu-toggle" type="button" aria-label="Toggle quick menu">Menu</button>
+    </div>
   <script>
 __PINYIN_MATCH_INLINE__
   </script>
@@ -695,12 +680,34 @@ __PINYIN_MATCH_INLINE__
       var root = document.documentElement;
       var body = document.body;
       var sidebarInitReady = false;
+      var sourceMdLink = document.getElementById('source-md-link');
       function markSidebarInitReady() {
         if (sidebarInitReady) return;
         root.classList.remove('sidebar-init-pending');
         root.classList.add('sidebar-init-ready');
         sidebarInitReady = true;
       }
+
+      function setupSourceMarkdownLink() {
+        var pathname = window.location && window.location.pathname ? window.location.pathname : '';
+        var lowerPath = pathname.toLowerCase();
+        var suffixLength = lowerPath.slice(-5) === '.html' ? 5 : (lowerPath.slice(-4) === '.htm' ? 4 : 0);
+        if (!suffixLength) return;
+
+        var mdPath = pathname.slice(0, pathname.length - suffixLength) + '.md';
+        var filename = decodeURIComponent(mdPath.split('/').pop() || 'source.md');
+
+        [sourceMdLink].forEach(function (link) {
+          if (!link) return;
+          link.href = mdPath;
+          link.setAttribute('download', filename);
+          link.setAttribute('title', 'Download ' + filename);
+          link.classList.remove('is-hidden');
+          link.classList.add('show');
+        });
+      }
+
+      setupSourceMarkdownLink();
 
       var links = Array.prototype.slice.call(document.querySelectorAll('#TOC a[href^="#"]'));
       var map = links
@@ -743,9 +750,11 @@ __PINYIN_MATCH_INLINE__
 
       var tocRoot = document.getElementById('TOC');
       var filterInput = document.getElementById('toc-filter');
-      var themeToggle = document.getElementById('theme-toggle');
-      var sidebarToggle = document.getElementById('sidebar-toggle');
-      var sidebarExpandFab = document.getElementById('sidebar-expand-fab');
+      var quickMenu = document.getElementById('quick-menu');
+      var quickMenuToggle = document.getElementById('quick-menu-toggle');
+      var quickTheme = document.getElementById('quick-theme');
+      var quickSidebar = document.getElementById('quick-sidebar');
+      var quickTop = document.getElementById('quick-top');
       var tocFilterActive = false;
       var tocSaveTimer = null;
       var tocLiByHref = Object.create(null);
@@ -770,11 +779,10 @@ __PINYIN_MATCH_INLINE__
       }
 
       function refreshSidebarLabel() {
-        if (sidebarToggle) {
-          var collapsed = body.classList.contains('sidebar-collapsed');
-          sidebarToggle.textContent = collapsed ? 'Show' : 'Hide';
-          sidebarToggle.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
-        }
+        if (!quickSidebar) return;
+        var collapsed = body.classList.contains('sidebar-collapsed');
+        quickSidebar.textContent = collapsed ? 'Show' : 'Hide';
+        quickSidebar.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
       }
 
       function setSidebarCollapsed(collapsed) {
@@ -851,31 +859,61 @@ __PINYIN_MATCH_INLINE__
       }
 
       function refreshThemeLabel() {
-        if (!themeToggle) return;
-        themeToggle.textContent = root.getAttribute('data-theme') === 'dark' ? 'Light' : 'Dark';
+        if (!quickTheme) return;
+        quickTheme.textContent = root.getAttribute('data-theme') === 'dark' ? 'Light' : 'Dark';
       }
       refreshThemeLabel();
       refreshSidebarLabel();
 
-      if (themeToggle) {
-        themeToggle.addEventListener('click', function () {
+      if (quickTheme) {
+        quickTheme.addEventListener('click', function () {
           var dark = root.getAttribute('data-theme') === 'dark';
           if (dark) root.removeAttribute('data-theme');
           else root.setAttribute('data-theme', 'dark');
           try { localStorage.setItem('doc-theme', dark ? 'light' : 'dark'); } catch (e) {}
           refreshThemeLabel();
+          closeQuickMenu();
         });
       }
 
-      if (sidebarToggle) {
-        sidebarToggle.addEventListener('click', function () {
+      if (quickSidebar) {
+        quickSidebar.addEventListener('click', function () {
           setSidebarCollapsed(!body.classList.contains('sidebar-collapsed'));
+          closeQuickMenu();
         });
       }
 
-      if (sidebarExpandFab) {
-        sidebarExpandFab.addEventListener('click', function () {
-          setSidebarCollapsed(false);
+      if (quickTop) {
+        quickTop.addEventListener('click', function () {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          closeQuickMenu();
+        });
+      }
+
+      if (sourceMdLink) {
+        sourceMdLink.addEventListener('click', function () {
+          closeQuickMenu();
+        });
+      }
+
+      function closeQuickMenu() {
+        if (quickMenu) quickMenu.classList.remove('open');
+      }
+
+      if (quickMenu && quickMenuToggle) {
+        quickMenuToggle.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          quickMenu.classList.toggle('open');
+        });
+
+        quickMenu.addEventListener('click', function (e) {
+          e.stopPropagation();
+        });
+
+        document.addEventListener('click', closeQuickMenu);
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape') closeQuickMenu();
         });
       }
 
@@ -1096,21 +1134,6 @@ __PINYIN_MATCH_INLINE__
       formatHttpSnippets();
       setupCopyButtons();
       markSidebarInitReady();
-
-      var backToTop = document.getElementById('back-to-top');
-      if (!backToTop) return;
-
-      function updateBackToTop() {
-        if (window.scrollY > 600) backToTop.classList.add('show');
-        else backToTop.classList.remove('show');
-      }
-
-      backToTop.addEventListener('click', function () {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      });
-
-      document.addEventListener('scroll', updateBackToTop, { passive: true });
-      updateBackToTop();
     })();
   </script>
 </body>
