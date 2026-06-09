@@ -26,10 +26,11 @@
       width: 100%;
       max-width: none;
       margin: 0;
-      padding: 16px 20px 16px 0;
+      min-height: 100vh;
+      padding: 0;
       display: grid;
-      grid-template-columns: 240px minmax(0, 1fr);
-      gap: 20px;
+      grid-template-columns: 284px minmax(0, 1fr);
+      gap: 0;
       align-items: start;
     }
 
@@ -71,6 +72,7 @@ $highlighting-css$
     :root {
       --bg: #f6f8fa;
       --panel: #ffffff;
+      --sidebar-bg: #f7f7f8;
       --line: #d0d7de;
       --text: #24292f;
       --muted: #57606a;
@@ -91,6 +93,7 @@ $highlighting-css$
     html[data-theme='dark'] {
       --bg: #0d1117;
       --panel: #161b22;
+      --sidebar-bg: #0f141b;
       --line: #30363d;
       --text: #c9d1d9;
       --muted: #8b949e;
@@ -115,7 +118,7 @@ $highlighting-css$
     body {
       margin: 0;
       color: var(--text);
-      background: var(--bg);
+      background: var(--panel);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
     }
 
@@ -123,29 +126,32 @@ $highlighting-css$
       width: 100%;
       max-width: none;
       margin: 0;
-      padding: 16px 20px 16px 0;
+      min-height: 100vh;
+      padding: 0;
       display: grid;
-      grid-template-columns: 240px minmax(0, 1fr);
-      gap: 20px;
+      grid-template-columns: 284px minmax(0, 1fr);
+      gap: 0;
       align-items: start;
     }
 
     .toc-panel {
       position: sticky;
-      top: 16px;
-      max-height: calc(100vh - 32px);
+      top: 0;
+      height: 100vh;
+      max-height: 100vh;
       overflow: auto;
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 10px;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--line);
+      padding: 18px 14px 24px;
     }
 
     .toc-panel h2 {
       margin: 0;
-      font-size: 14px;
+      font-size: 13px;
       color: var(--muted);
-      font-weight: 600;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
     }
 
     .toc-head {
@@ -153,7 +159,7 @@ $highlighting-css$
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      margin-bottom: 10px;
+      margin: 0 6px 14px;
     }
 
     .quick-menu-button,
@@ -194,11 +200,11 @@ $highlighting-css$
 
     .toc-filter {
       width: 100%;
-      height: 30px;
+      height: 36px;
       border: 1px solid var(--line);
       border-radius: 6px;
-      padding: 0 8px;
-      margin: 0 0 10px;
+      padding: 0 10px;
+      margin: 0 0 14px;
       font-size: 13px;
       color: var(--text);
       background: var(--input-bg);
@@ -218,9 +224,9 @@ $highlighting-css$
     }
 
     #TOC ul ul {
-      margin-left: 4px;
-      padding-left: 8px;
-      border-left: 1px solid #eaeef2;
+      margin-left: 9px;
+      padding-left: 9px;
+      border-left: 1px solid var(--line);
     }
 
     #TOC li {
@@ -235,7 +241,7 @@ $highlighting-css$
       text-decoration: none;
       word-break: break-word;
       border-radius: 6px;
-      padding: 4px 6px;
+      padding: 6px 8px;
       transition: color 120ms ease, background-color 120ms ease;
     }
 
@@ -294,16 +300,17 @@ $highlighting-css$
     .doc-panel {
       min-width: 0;
       background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 28px 34px;
+      border: 0;
+      border-radius: 0;
+      padding: 42px 56px 88px;
     }
 
     .markdown-body {
       background: transparent !important;
-      max-width: none;
+      max-width: 980px;
+      margin: 0 auto;
       color: var(--text);
-      font-size: 15px;
+      font-size: 15.5px;
       line-height: 1.75;
     }
 
@@ -583,18 +590,20 @@ $highlighting-css$
     }
 
     .quick-menu {
-      position: fixed;
-      right: 18px;
-      bottom: 18px;
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      z-index: 1001;
+      justify-content: flex-end;
+      max-width: 980px;
+      margin: 0 auto 18px;
+      position: sticky;
+      top: 12px;
+      z-index: 20;
     }
 
     .quick-menu-panel {
       display: none;
+      position: absolute;
+      top: 36px;
+      right: 0;
       flex-direction: column;
       gap: 8px;
       padding: 8px;
@@ -609,11 +618,9 @@ $highlighting-css$
     }
 
     .quick-menu-toggle {
-      width: 52px;
-      height: 44px;
-      border-radius: 999px;
+      min-width: 74px;
+      height: 30px;
       font-weight: 600;
-      box-shadow: var(--shadow);
     }
 
     @media (max-width: 960px) {
@@ -623,12 +630,18 @@ $highlighting-css$
 
       .toc-panel {
         position: static;
+        height: auto;
         max-height: none;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .doc-panel {
+        padding: 28px 20px 72px;
       }
 
       .quick-menu {
-        right: 12px;
-        bottom: 12px;
+        margin-bottom: 14px;
       }
 
     }
@@ -651,20 +664,20 @@ $highlighting-css$
     </aside>
     $endif$
     <main class="doc-panel">
+      <div id="quick-menu" class="quick-menu">
+        <button id="quick-menu-toggle" class="quick-menu-button quick-menu-toggle" type="button" aria-label="Toggle page actions">Actions</button>
+        <div id="quick-menu-panel" class="quick-menu-panel" aria-label="Page actions">
+          <a id="source-md-link" class="quick-menu-item is-hidden" href="#" download aria-label="Download source markdown">MD</a>
+          <button id="quick-top" class="quick-menu-item" type="button" aria-label="Back to top">Top</button>
+          <button id="quick-sidebar" class="quick-menu-item" type="button" aria-label="Toggle sidebar">Side</button>
+          <button id="quick-theme" class="quick-menu-item" type="button" aria-label="Toggle theme">Dark</button>
+        </div>
+      </div>
       <article class="markdown-body">
         $body$
       </article>
     </main>
   </div>
-    <div id="quick-menu" class="quick-menu">
-      <div id="quick-menu-panel" class="quick-menu-panel" aria-label="Quick actions">
-        <a id="source-md-link" class="quick-menu-item is-hidden" href="#" download aria-label="Download source markdown">MD</a>
-        <button id="quick-top" class="quick-menu-item" type="button" aria-label="Back to top">Top</button>
-        <button id="quick-sidebar" class="quick-menu-item" type="button" aria-label="Toggle sidebar">Side</button>
-        <button id="quick-theme" class="quick-menu-item" type="button" aria-label="Toggle theme">Dark</button>
-      </div>
-      <button id="quick-menu-toggle" class="quick-menu-button quick-menu-toggle" type="button" aria-label="Toggle quick menu">Menu</button>
-    </div>
   <script>
 __PINYIN_MATCH_INLINE__
   </script>
