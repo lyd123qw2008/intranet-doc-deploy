@@ -67,7 +67,7 @@ if ($shouldBuildHtml) {
 
     $jobs = @(
         @{ Md = "RCOS_API_DOC.md"; Html = "RCOS_API_DOC.html"; Title = "RCOS API DOC" },
-        @{ Md = "5gos_liuyd.md"; Html = "5gos_liuyd.html"; Title = "5gos liuyd" }
+        @{ Md = "5gos_liuyd.md"; Html = "5gos_liuyd.html"; Title = "5GOS API DOC" }
     )
 
     foreach ($j in $jobs) {

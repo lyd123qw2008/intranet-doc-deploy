@@ -700,7 +700,9 @@ $highlighting-css$
       .toc-panel {
         position: static;
         height: auto;
-        max-height: none;
+        max-height: min(52vh, 480px);
+        overflow: auto;
+        overscroll-behavior: contain;
         border-right: 0;
         border-bottom: 1px solid var(--line);
       }
@@ -1189,8 +1191,8 @@ __PINYIN_MATCH_INLINE__
           var btn = document.createElement('button');
           btn.type = 'button';
           btn.className = 'code-copy-btn';
-          btn.textContent = 'Copy';
-          btn.setAttribute('aria-label', 'Copy code');
+          btn.textContent = '复制';
+          btn.setAttribute('aria-label', '复制代码');
 
           btn.addEventListener('click', function (e) {
             e.preventDefault();
@@ -1198,21 +1200,21 @@ __PINYIN_MATCH_INLINE__
 
             var raw = code.textContent || '';
             var resetLabel = function () {
-              btn.textContent = 'Copy';
+              btn.textContent = '复制';
             };
 
             if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) {
               navigator.clipboard.writeText(raw).then(function () {
-                btn.textContent = 'Copied';
+                btn.textContent = '已复制';
                 setTimeout(resetLabel, 1200);
               }).catch(function () {
                 var ok = fallbackCopyText(raw);
-                btn.textContent = ok ? 'Copied' : 'Ctrl+C';
+                btn.textContent = ok ? '已复制' : 'Ctrl+C';
                 setTimeout(resetLabel, 1200);
               });
             } else {
               var ok2 = fallbackCopyText(raw);
-              btn.textContent = ok2 ? 'Copied' : 'Ctrl+C';
+              btn.textContent = ok2 ? '已复制' : 'Ctrl+C';
               setTimeout(resetLabel, 1200);
             }
           });
