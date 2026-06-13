@@ -36,6 +36,44 @@ function Ensure-PandocPath {
     throw "Pandoc not found. Install pandoc or place pandoc.exe at: $localPandocExe"
 }
 
+function New-GzipFile {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$SourcePath,
+
+        [Parameter(Mandatory = $true)]
+        [string]$DestinationPath
+    )
+
+    if (Test-Path $DestinationPath) {
+        Remove-Item $DestinationPath -Force
+    }
+
+    $sourceStream = [System.IO.File]::OpenRead($SourcePath)
+    try {
+        $destinationStream = [System.IO.File]::Create($DestinationPath)
+        try {
+            $gzipStream = New-Object -TypeName System.IO.Compression.GZipStream -ArgumentList @(
+                $destinationStream,
+                [System.IO.Compression.CompressionLevel]::Optimal,
+                $false
+            )
+            try {
+                $sourceStream.CopyTo($gzipStream)
+            }
+            finally {
+                $gzipStream.Dispose()
+            }
+        }
+        finally {
+            $destinationStream.Dispose()
+        }
+    }
+    finally {
+        $sourceStream.Dispose()
+    }
+}
+
 Require-Command "ssh"
 Require-Command "scp"
 Require-Command "tar"
@@ -119,6 +157,15 @@ $null = New-Item -ItemType Directory -Path $tmpRoot -Force
 try {
     foreach ($p in $required) {
         Copy-Item -Path (Join-Path $SourceDir $p) -Destination $tmpRoot -Recurse -Force
+    }
+
+    foreach ($p in @("RCOS_API_DOC.html", "5gos_liuyd.html")) {
+        $htmlPath = Join-Path $tmpRoot $p
+        $gzipPath = "$htmlPath.gz"
+        New-GzipFile -SourcePath $htmlPath -DestinationPath $gzipPath
+        $htmlSize = (Get-Item $htmlPath).Length
+        $gzipSize = (Get-Item $gzipPath).Length
+        Write-Host ("Precompressed {0}: {1:N0} -> {2:N0} bytes" -f $p, $htmlSize, $gzipSize)
     }
 
     if (Test-Path $bundle) {
