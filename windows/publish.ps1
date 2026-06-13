@@ -108,6 +108,13 @@ if ($shouldBuildHtml) {
         @{ Md = "5gos_liuyd.md"; Html = "5gos_liuyd.html"; Title = "5GOS API DOC" }
     )
 
+    $runtimeSourceDir = Join-Path $SourceDir "_docs_runtime"
+    if (Test-Path $runtimeSourceDir) {
+        Get-ChildItem -LiteralPath $runtimeSourceDir -Force | Remove-Item -Recurse -Force
+    } else {
+        $null = New-Item -ItemType Directory -Path $runtimeSourceDir -Force
+    }
+
     foreach ($j in $jobs) {
         $mdPath = Join-Path $SourceDir $j.Md
         $htmlPath = Join-Path $SourceDir $j.Html
@@ -130,7 +137,8 @@ $required = @(
     "RCOS_API_DOC.assets",
     "5gos_liuyd.html",
     "5gos_liuyd.md",
-    "5gos_liuyd.assets"
+    "5gos_liuyd.assets",
+    "_docs_runtime"
 )
 
 foreach ($p in $required) {
@@ -159,13 +167,25 @@ try {
         Copy-Item -Path (Join-Path $SourceDir $p) -Destination $tmpRoot -Recurse -Force
     }
 
-    foreach ($p in @("RCOS_API_DOC.html", "5gos_liuyd.html")) {
-        $htmlPath = Join-Path $tmpRoot $p
-        $gzipPath = "$htmlPath.gz"
-        New-GzipFile -SourcePath $htmlPath -DestinationPath $gzipPath
-        $htmlSize = (Get-Item $htmlPath).Length
+    $precompressFiles = @()
+    $precompressFiles += "RCOS_API_DOC.html"
+    $precompressFiles += "5gos_liuyd.html"
+
+    $runtimeDir = Join-Path $tmpRoot "_docs_runtime"
+    $runtimeFiles = Get-ChildItem -Path $runtimeDir -File | Where-Object {
+        $_.Extension -in @(".css", ".js")
+    }
+    foreach ($f in $runtimeFiles) {
+        $precompressFiles += (Join-Path "_docs_runtime" $f.Name)
+    }
+
+    foreach ($p in $precompressFiles) {
+        $sourcePath = Join-Path $tmpRoot $p
+        $gzipPath = "$sourcePath.gz"
+        New-GzipFile -SourcePath $sourcePath -DestinationPath $gzipPath
+        $sourceSize = (Get-Item $sourcePath).Length
         $gzipSize = (Get-Item $gzipPath).Length
-        Write-Host ("Precompressed {0}: {1:N0} -> {2:N0} bytes" -f $p, $htmlSize, $gzipSize)
+        Write-Host ("Precompressed {0}: {1:N0} -> {2:N0} bytes" -f $p, $sourceSize, $gzipSize)
     }
 
     if (Test-Path $bundle) {

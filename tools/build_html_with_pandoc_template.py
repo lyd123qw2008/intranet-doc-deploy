@@ -1,4 +1,6 @@
 import argparse
+import hashlib
+import re
 import subprocess
 import tempfile
 from pathlib import Path
@@ -38,6 +40,78 @@ def run_pandoc(
         raise RuntimeError(f"pandoc failed for {md_path}: {result.stderr.strip()}")
 
 
+RUNTIME_DIR_NAME = "_docs_runtime"
+
+
+def write_runtime_asset(out_path: Path, prefix: str, suffix: str, content: str) -> str:
+    asset_dir = out_path.parent / RUNTIME_DIR_NAME
+    asset_dir.mkdir(parents=True, exist_ok=True)
+    digest = hashlib.sha256(content.encode("utf-8")).hexdigest()[:12]
+    filename = f"{prefix}.{digest}.{suffix}"
+    asset_path = asset_dir / filename
+    asset_path.write_text(content, encoding="utf-8")
+    return f"{RUNTIME_DIR_NAME}/{filename}"
+
+
+def replace_tag_by_id(html: str, tag: str, element_id: str, replacement: str) -> str:
+    pattern = re.compile(
+        rf"\s*<{tag}\s+id=[\"']{re.escape(element_id)}[\"']>\s*.*?\s*</{tag}>",
+        re.DOTALL | re.IGNORECASE,
+    )
+    new_html, count = pattern.subn("\n" + replacement, html, count=1)
+    if count != 1:
+        raise RuntimeError(f"could not replace <{tag} id=\"{element_id}\">")
+    return new_html
+
+
+def link_stylesheet(html: str, element_id: str, href: str) -> str:
+    return replace_tag_by_id(
+        html,
+        "style",
+        element_id,
+        f'  <link rel="stylesheet" href="{href}" />',
+    )
+
+
+def link_script(html: str, element_id: str, src: str) -> str:
+    return replace_tag_by_id(
+        html,
+        "script",
+        element_id,
+        f'  <script src="{src}"></script>',
+    )
+
+
+def externalize_style_by_id(out_path: Path, element_id: str, prefix: str) -> None:
+    html = out_path.read_text(encoding="utf-8", errors="ignore")
+    pattern = re.compile(
+        rf"<style\s+id=[\"']{re.escape(element_id)}[\"']>\s*(.*?)\s*</style>",
+        re.DOTALL | re.IGNORECASE,
+    )
+    match = pattern.search(html)
+    if not match:
+        raise RuntimeError(f"style block not found: {element_id}")
+
+    href = write_runtime_asset(out_path, prefix, "css", match.group(1).strip() + "\n")
+    html = link_stylesheet(html, element_id, href)
+    out_path.write_text(html, encoding="utf-8")
+
+
+def externalize_script_by_id(out_path: Path, element_id: str, prefix: str) -> None:
+    html = out_path.read_text(encoding="utf-8", errors="ignore")
+    pattern = re.compile(
+        rf"<script\s+id=[\"']{re.escape(element_id)}[\"']>\s*(.*?)\s*</script>",
+        re.DOTALL | re.IGNORECASE,
+    )
+    match = pattern.search(html)
+    if not match:
+        raise RuntimeError(f"script block not found: {element_id}")
+
+    src = write_runtime_asset(out_path, prefix, "js", match.group(1).strip() + "\n")
+    html = link_script(html, element_id, src)
+    out_path.write_text(html, encoding="utf-8")
+
+
 def inject_local_pinyin_match(out_path: Path) -> None:
     token = "__PINYIN_MATCH_INLINE__"
     html = out_path.read_text(encoding="utf-8", errors="ignore")
@@ -69,6 +143,13 @@ def inject_local_github_markdown_css(out_path: Path) -> None:
 
     html = html.replace(token, css)
     out_path.write_text(html, encoding="utf-8")
+
+
+def externalize_runtime_assets(out_path: Path) -> None:
+    externalize_style_by_id(out_path, "github-markdown-css", "github-markdown")
+    externalize_style_by_id(out_path, "docs-runtime-css", "docs-runtime")
+    externalize_script_by_id(out_path, "pinyin-match-js", "pinyin-match")
+    externalize_script_by_id(out_path, "docs-runtime-js", "docs-runtime")
 
 
 def infer_code_lang(block_lines: list[str]) -> str:
@@ -180,6 +261,7 @@ def main() -> None:
         )
         inject_local_github_markdown_css(out_path)
         inject_local_pinyin_match(out_path)
+        externalize_runtime_assets(out_path)
     finally:
         try:
             tmp_md_path.unlink(missing_ok=True)
