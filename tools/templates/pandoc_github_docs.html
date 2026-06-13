@@ -726,19 +726,19 @@ $highlighting-css$
     <aside class="toc-panel">
       <nav id="$idprefix$TOC" role="doc-toc">
         <div class="toc-head">
-          <h2>Contents</h2>
+          <h2>目录</h2>
           <div class="toc-actions">
-            <button id="sidebar-toggle" class="quick-menu-button sidebar-toggle" type="button" aria-label="Collapse sidebar">Hide</button>
+            <button id="sidebar-toggle" class="quick-menu-button sidebar-toggle" type="button" aria-label="收起侧边栏">收起</button>
             <div id="quick-menu" class="quick-menu">
-              <button id="quick-menu-toggle" class="quick-menu-button quick-menu-toggle" type="button" aria-label="Toggle page actions">Actions</button>
-              <div id="quick-menu-panel" class="quick-menu-panel" aria-label="Page actions">
-                <button id="source-md-link" class="quick-menu-item is-hidden" type="button" aria-label="Download source markdown">MD</button>
-                <button id="quick-theme" class="quick-menu-item" type="button" aria-label="Toggle theme">Dark</button>
+              <button id="quick-menu-toggle" class="quick-menu-button quick-menu-toggle" type="button" aria-label="打开页面操作">操作</button>
+              <div id="quick-menu-panel" class="quick-menu-panel" aria-label="页面操作">
+                <button id="source-md-link" class="quick-menu-item is-hidden" type="button" aria-label="下载源文档">下载</button>
+                <button id="quick-theme" class="quick-menu-item" type="button" aria-label="切换主题">深色</button>
               </div>
             </div>
           </div>
         </div>
-        <input id="toc-filter" class="toc-filter" type="text" placeholder="Filter headings..." />
+        <input id="toc-filter" class="toc-filter" type="text" placeholder="筛选标题..." />
         $table-of-contents$
       </nav>
     </aside>
@@ -750,7 +750,7 @@ $highlighting-css$
     </main>
   </div>
   $if(toc)$
-  <button id="sidebar-expand-fab" class="sidebar-expand-fab" type="button" aria-label="Expand sidebar">Show</button>
+  <button id="sidebar-expand-fab" class="sidebar-expand-fab" type="button" aria-label="展开侧边栏">展开</button>
   $endif$
   <button id="back-to-top" class="back-to-top" type="button" aria-label="Back to top">&uarr;</button>
   <script>
@@ -788,7 +788,7 @@ __PINYIN_MATCH_INLINE__
         if (!sourceMdLink) return;
         sourceMdLink.setAttribute('data-href', mdPath);
         sourceMdLink.setAttribute('data-filename', filename);
-        sourceMdLink.setAttribute('title', 'Download ' + filename);
+        sourceMdLink.setAttribute('title', '下载 ' + filename);
         sourceMdLink.classList.remove('is-hidden');
         sourceMdLink.classList.add('show');
       }
@@ -868,8 +868,8 @@ __PINYIN_MATCH_INLINE__
       function refreshSidebarLabel() {
         if (!sidebarToggle) return;
         var collapsed = body.classList.contains('sidebar-collapsed');
-        sidebarToggle.textContent = collapsed ? 'Show' : 'Hide';
-        sidebarToggle.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+        sidebarToggle.textContent = collapsed ? '展开' : '收起';
+        sidebarToggle.setAttribute('aria-label', collapsed ? '展开侧边栏' : '收起侧边栏');
       }
 
       function setSidebarCollapsed(collapsed) {
@@ -947,7 +947,7 @@ __PINYIN_MATCH_INLINE__
 
       function refreshThemeLabel() {
         if (!quickTheme) return;
-        quickTheme.textContent = root.getAttribute('data-theme') === 'dark' ? 'Light' : 'Dark';
+        quickTheme.textContent = root.getAttribute('data-theme') === 'dark' ? '浅色' : '深色';
       }
       refreshThemeLabel();
       refreshSidebarLabel();
@@ -1042,7 +1042,7 @@ __PINYIN_MATCH_INLINE__
           var btn = document.createElement('button');
           btn.type = 'button';
           btn.className = 'toc-toggle';
-          btn.setAttribute('aria-label', 'toggle submenu');
+          btn.setAttribute('aria-label', '展开或收起子目录');
           btn.textContent = '>';
           btn.addEventListener('click', function (e) {
             e.preventDefault();
