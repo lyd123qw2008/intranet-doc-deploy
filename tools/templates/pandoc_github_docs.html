@@ -74,22 +74,26 @@ $highlighting-css$
     :root {
       --bg: #f6f8fa;
       --panel: #ffffff;
-      --sidebar-bg: #f7f7f8;
-      --line: #d0d7de;
-      --text: #24292f;
-      --muted: #57606a;
+      --sidebar-bg: #f6f8fa;
+      --line: #d1d9e0;
+      --text: #1f2328;
+      --muted: #59636e;
       --code-bg: #f6f8fa;
-      --code-border: #d8dee4;
+      --code-border: #d1d9e0;
       --table-head: #f6f8fa;
       --table-zebra: #fcfcfd;
       --brand: #0969da;
       --brand-soft: #ddf4ff;
-      --toc-hover: #f3f4f6;
-      --toc-text: #4b5563;
+      --toc-hover: #eff2f5;
+      --toc-text: #59636e;
       --input-bg: #ffffff;
       --btn-bg: #ffffff;
-      --btn-hover: #f3f4f6;
+      --btn-hover: #eff2f5;
+      --scrollbar-thumb: #8c959f;
+      --scrollbar-thumb-hover: #6e7781;
       --shadow: 0 6px 16px rgba(27, 31, 35, 0.12);
+      --floating-bg: rgba(255, 255, 255, 0.92);
+      --floating-shadow: 0 6px 16px rgba(27, 31, 35, 0.14);
       --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
     }
 
@@ -105,13 +109,17 @@ $highlighting-css$
       --table-head: #161b22;
       --table-zebra: #11161d;
       --brand: #58a6ff;
-      --brand-soft: #1f2f46;
+      --brand-soft: rgba(56, 139, 253, 0.15);
       --toc-hover: #21262d;
       --toc-text: #b1bac4;
       --input-bg: #0d1117;
       --btn-bg: #161b22;
       --btn-hover: #21262d;
+      --scrollbar-thumb: #6e7681;
+      --scrollbar-thumb-hover: #8b949e;
       --shadow: 0 8px 20px rgba(1, 4, 9, 0.55);
+      --floating-bg: rgba(22, 27, 34, 0.9);
+      --floating-shadow: 0 8px 20px rgba(1, 4, 9, 0.6);
     }
 
     * {
@@ -143,9 +151,45 @@ $highlighting-css$
       height: 100vh;
       max-height: 100vh;
       overflow: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--scrollbar-thumb) transparent;
       background: var(--sidebar-bg);
       border-right: 1px solid var(--line);
       padding: 18px 14px 24px;
+    }
+
+    .toc-panel::-webkit-scrollbar,
+    .markdown-body pre::-webkit-scrollbar,
+    .table-scroll::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    .toc-panel::-webkit-scrollbar-track,
+    .markdown-body pre::-webkit-scrollbar-track,
+    .table-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .toc-panel::-webkit-scrollbar-thumb,
+    .markdown-body pre::-webkit-scrollbar-thumb,
+    .table-scroll::-webkit-scrollbar-thumb {
+      background: var(--scrollbar-thumb);
+      border: 3px solid transparent;
+      border-radius: 999px;
+      background-clip: content-box;
+    }
+
+    .toc-panel::-webkit-scrollbar-thumb:hover,
+    .markdown-body pre::-webkit-scrollbar-thumb:hover,
+    .table-scroll::-webkit-scrollbar-thumb:hover {
+      background-color: var(--scrollbar-thumb-hover);
+    }
+
+    .markdown-body pre,
+    .table-scroll {
+      scrollbar-width: thin;
+      scrollbar-color: var(--scrollbar-thumb) transparent;
     }
 
     .toc-panel h2 {
@@ -192,6 +236,16 @@ $highlighting-css$
       background: var(--btn-hover);
     }
 
+    .quick-menu-button:focus-visible,
+    .quick-menu-item:focus-visible,
+    .code-action-btn:focus-visible,
+    .mobile-toc-toggle:focus-visible,
+    .sidebar-expand-fab:focus-visible,
+    .back-to-top:focus-visible {
+      outline: 2px solid #54aeff;
+      outline-offset: 2px;
+    }
+
     .quick-menu-item {
       display: inline-flex;
       align-items: center;
@@ -230,6 +284,51 @@ $highlighting-css$
       box-shadow: 0 0 0 2px rgba(84, 174, 255, 0.2);
     }
 
+    .toc-filter-tools {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 6px;
+      margin: -6px 2px 10px;
+    }
+
+    .toc-current {
+      min-width: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .toc-filter-status {
+      display: none;
+      margin: -2px 2px 10px;
+      padding: 6px 8px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--btn-hover);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .toc-filter-status.show {
+      display: block;
+    }
+
+    .toc-filter-status.is-empty {
+      border-color: rgba(207, 34, 46, 0.32);
+      background: #ffebe9;
+      color: #cf222e;
+    }
+
+    html[data-theme='dark'] .toc-filter-status.is-empty {
+      border-color: rgba(255, 123, 114, 0.34);
+      background: rgba(248, 81, 73, 0.12);
+      color: #ff7b72;
+    }
+
     #TOC ul {
       list-style: none;
       margin: 0;
@@ -266,9 +365,38 @@ $highlighting-css$
     }
 
     #TOC a.active {
-      color: #0b4fb3;
-      background: var(--brand-soft);
+      color: var(--text);
+      background: var(--toc-hover);
+      box-shadow: inset 3px 0 0 var(--brand);
       font-weight: 600;
+    }
+
+    #TOC a.toc-filter-context-match:not(.toc-filter-direct-match) {
+      color: var(--muted);
+    }
+
+    #TOC a.toc-filter-direct-match {
+      color: var(--brand);
+      background: var(--brand-soft);
+      font-weight: 700;
+    }
+
+    #TOC a.toc-filter-content-match:not(.toc-filter-direct-match) {
+      color: var(--brand);
+      background: var(--brand-soft);
+      border-left: 2px solid var(--brand);
+      padding-left: 6px;
+    }
+
+    .toc-filter-mark {
+      border-radius: 3px;
+      padding: 0 1px;
+      background: rgba(255, 212, 0, 0.35);
+      color: inherit;
+    }
+
+    html[data-theme='dark'] .toc-filter-mark {
+      background: rgba(210, 168, 255, 0.28);
     }
 
     #TOC li.has-children > a {
@@ -321,7 +449,7 @@ $highlighting-css$
 
     .markdown-body {
       background: transparent !important;
-      max-width: 980px;
+      max-width: 1120px;
       margin: 0 auto;
       color: var(--text);
       font-size: 15.5px;
@@ -364,6 +492,22 @@ $highlighting-css$
       position: relative;
     }
 
+    .markdown-body .code-block-shell {
+      margin: 1.1em 0;
+      border: 1px solid var(--code-border);
+      border-radius: 8px;
+      background: var(--code-bg);
+      overflow: hidden;
+    }
+
+    .markdown-body .code-block-shell > pre {
+      margin: 0;
+      border: 0;
+      border-radius: 0;
+      padding-top: 12px;
+      background: transparent;
+    }
+
     .markdown-body code {
       font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, "Liberation Mono", monospace;
       font-size: 0.9em;
@@ -376,8 +520,14 @@ $highlighting-css$
       white-space: pre;
     }
 
+    .markdown-body pre.code-wrap-enabled > code {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
     .markdown-body pre code {
-      color: #24292f;
+      color: var(--text);
     }
 
     .markdown-body pre code span.kw,
@@ -389,7 +539,7 @@ $highlighting-css$
     .markdown-body pre code span.dt,
     .markdown-body pre code span.op,
     .markdown-body pre code span.bu {
-      color: #24292f;
+      color: var(--text);
     }
 
     .markdown-body pre code span.st,
@@ -429,14 +579,9 @@ $highlighting-css$
       padding: 0.12em 0.35em;
     }
 
-    .markdown-body pre.http-snippet {
-      border-left: 4px solid #1f6feb;
-      background: #f8fbff;
-    }
-
-    html[data-theme='dark'] .markdown-body pre.http-snippet {
-      border-left-color: #58a6ff;
-      background: #0f1a27;
+    html[data-theme='dark'] .markdown-body .code-block-shell {
+      border-color: #30363d;
+      background: #161b22;
     }
 
     html[data-theme='dark'] .markdown-body pre,
@@ -444,6 +589,11 @@ $highlighting-css$
       background: #161b22;
       border-color: #30363d;
       color: #c9d1d9;
+    }
+
+    html[data-theme='dark'] .markdown-body .code-block-shell > pre,
+    html[data-theme='dark'] .markdown-body .code-block-shell > pre > code {
+      background: transparent;
     }
 
     html[data-theme='dark'] .markdown-body pre code span.kw,
@@ -524,23 +674,119 @@ $highlighting-css$
     }
 
     .markdown-body table {
+      display: table;
       width: 100%;
-      border-collapse: collapse;
+      border-collapse: separate;
+      border-spacing: 0;
+      border: 1px solid var(--line);
+      border-radius: 6px;
       margin: 1.1em 0;
       font-size: 14px;
+      line-height: 1.45;
       table-layout: auto;
+      overflow: hidden;
+    }
+
+    .markdown-body .table-scroll {
+      position: relative;
+      overflow: auto;
+      margin: 1.1em 0;
+      border-radius: 6px;
+    }
+
+    .markdown-body .table-scroll.is-scrollable {
+      box-shadow:
+        inset 14px 0 12px -16px rgba(27, 31, 35, 0.45),
+        inset -14px 0 12px -16px rgba(27, 31, 35, 0.45);
+    }
+
+    .markdown-body .table-scroll.is-scrollable::after {
+      content: '横向滚动';
+      position: sticky;
+      right: 8px;
+      float: right;
+      top: 6px;
+      z-index: 2;
+      display: inline-flex;
+      margin-top: 6px;
+      margin-right: 6px;
+      padding: 1px 6px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.3;
+      opacity: 0.72;
+      pointer-events: none;
+    }
+
+    .markdown-body .table-scroll.is-scrollable:hover::after {
+      opacity: 1;
+    }
+
+    .markdown-body .table-scroll > table {
+      margin: 0;
+      min-width: 100%;
     }
 
     .markdown-body table th,
     .markdown-body table td {
-      border: 1px solid var(--line);
-      padding: 8px 10px;
+      border: 0;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      padding: 7px 10px;
       vertical-align: top;
+      word-break: break-word;
+    }
+
+    .markdown-body table tr > :last-child {
+      border-right: 0;
+    }
+
+    .markdown-body table tbody:last-child tr:last-child > th,
+    .markdown-body table tbody:last-child tr:last-child > td,
+    .markdown-body table tfoot:last-child tr:last-child > th,
+    .markdown-body table tfoot:last-child tr:last-child > td,
+    .markdown-body table > tr:last-child > th,
+    .markdown-body table > tr:last-child > td {
+      border-bottom: 0;
+    }
+
+    .markdown-body table thead:last-child tr:last-child > th,
+    .markdown-body table thead:last-child tr:last-child > td {
+      border-bottom: 0;
+    }
+
+    .markdown-body table thead:first-child tr:first-child > :first-child,
+    .markdown-body table tbody:first-child tr:first-child > :first-child,
+    .markdown-body table > tr:first-child > :first-child {
+      border-top-left-radius: 5px;
+    }
+
+    .markdown-body table thead:first-child tr:first-child > :last-child,
+    .markdown-body table tbody:first-child tr:first-child > :last-child,
+    .markdown-body table > tr:first-child > :last-child {
+      border-top-right-radius: 5px;
+    }
+
+    .markdown-body table tbody:last-child tr:last-child > :first-child,
+    .markdown-body table tfoot:last-child tr:last-child > :first-child,
+    .markdown-body table > tr:last-child > :first-child {
+      border-bottom-left-radius: 5px;
+    }
+
+    .markdown-body table tbody:last-child tr:last-child > :last-child,
+    .markdown-body table tfoot:last-child tr:last-child > :last-child,
+    .markdown-body table > tr:last-child > :last-child {
+      border-bottom-right-radius: 5px;
     }
 
     .markdown-body table thead th {
       background: var(--table-head);
+      color: var(--text);
       font-weight: 600;
+      white-space: nowrap;
     }
 
     .markdown-body table tbody tr:nth-child(even) {
@@ -548,7 +794,7 @@ $highlighting-css$
     }
 
     .markdown-body table tbody tr:hover {
-      background: #eef6ff;
+      background: var(--btn-hover);
     }
 
     html[data-theme='dark'] .markdown-body table {
@@ -559,30 +805,48 @@ $highlighting-css$
     html[data-theme='dark'] .markdown-body table th,
     html[data-theme='dark'] .markdown-body table td {
       border-color: var(--line);
-      background: #0f1622;
+      background: transparent;
       color: var(--text);
     }
 
     html[data-theme='dark'] .markdown-body table thead th {
-      background: #182233;
-      color: #dbe7f5;
+      background: var(--table-head);
+      color: var(--text);
     }
 
     html[data-theme='dark'] .markdown-body table tbody tr:nth-child(even) td {
-      background: #131d2b;
+      background: var(--table-zebra);
     }
 
     html[data-theme='dark'] .markdown-body table tbody tr:hover td {
-      background: #1a2a3f;
+      background: var(--btn-hover);
     }
 
-    .code-copy-btn {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      height: 24px;
+    html[data-theme='dark'] .markdown-body .table-scroll.is-scrollable {
+      box-shadow:
+        inset 14px 0 12px -16px rgba(201, 209, 217, 0.65),
+        inset -14px 0 12px -16px rgba(201, 209, 217, 0.65);
+    }
+
+    .code-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0;
+      padding: 5px 8px;
+      border-bottom: 1px solid var(--code-border);
+      background: var(--panel);
+    }
+
+    html[data-theme='dark'] .code-actions {
+      border-bottom-color: #30363d;
+      background: #0d1117;
+    }
+
+    .code-action-btn {
+      height: 22px;
       min-width: 56px;
-      border: 1px solid #d0d7de;
+      border: 1px solid var(--line);
       border-radius: 6px;
       background: var(--btn-bg);
       color: var(--text);
@@ -590,16 +854,35 @@ $highlighting-css$
       line-height: 1;
       padding: 0 8px;
       cursor: pointer;
-      opacity: 0;
-      transition: opacity 120ms ease, background-color 120ms ease;
+      transition: background-color 120ms ease;
     }
 
-    .markdown-body pre:hover .code-copy-btn,
-    .markdown-body pre:focus-within .code-copy-btn {
-      opacity: 1;
+    .code-lang-badge {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      height: 22px;
+      min-width: 42px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 0 7px;
+      background: var(--btn-hover);
+      color: var(--muted);
+      font: 700 11px/1 var(--font-sans);
+      letter-spacing: 0.02em;
+      pointer-events: none;
     }
 
-    .code-copy-btn:hover {
+    .code-lang-badge.show {
+      display: inline-flex;
+      margin-right: auto;
+    }
+
+    .code-wrap-btn {
+      min-width: 48px;
+    }
+
+    .code-action-btn:hover {
       background: var(--btn-hover);
     }
 
@@ -648,11 +931,12 @@ $highlighting-css$
       border: 1px solid var(--line);
       border-radius: 6px;
       padding: 0 10px;
-      background: var(--btn-bg);
+      background: var(--floating-bg);
       color: var(--text);
       font-size: 12px;
       font-weight: 600;
-      box-shadow: var(--shadow);
+      box-shadow: var(--floating-shadow);
+      backdrop-filter: blur(8px);
       cursor: pointer;
     }
 
@@ -673,12 +957,18 @@ $highlighting-css$
       height: 44px;
       border: 1px solid var(--line);
       border-radius: 999px;
-      background: var(--btn-bg);
+      background: var(--floating-bg);
       color: var(--text);
       font-size: 22px;
       line-height: 1;
-      box-shadow: var(--shadow);
+      box-shadow: var(--floating-shadow);
+      backdrop-filter: blur(8px);
       cursor: pointer;
+    }
+
+    .mobile-toc-toggle,
+    .mobile-toc-backdrop {
+      display: none;
     }
 
     .back-to-top.show {
@@ -688,34 +978,110 @@ $highlighting-css$
     }
 
     .back-to-top:hover,
-    .sidebar-expand-fab:hover {
+    .sidebar-expand-fab:hover,
+    .mobile-toc-toggle:hover {
       background: var(--btn-hover);
     }
 
     @media (max-width: 960px) {
       .layout {
         grid-template-columns: 1fr;
+        display: block;
       }
 
       .toc-panel {
-        position: static;
-        height: auto;
-        max-height: min(52vh, 480px);
+        position: fixed;
+        inset: 0 auto 0 0;
+        z-index: 80;
+        width: min(86vw, 360px);
+        height: 100vh;
+        max-height: 100vh;
         overflow: auto;
         overscroll-behavior: contain;
-        border-right: 0;
-        border-bottom: 1px solid var(--line);
+        border-right: 1px solid var(--line);
+        border-bottom: 0;
+        box-shadow: var(--shadow);
+        transform: translateX(-104%);
+        transition: transform 160ms ease;
+      }
+
+      html.sidebar-collapsed .toc-panel,
+      body.sidebar-collapsed .toc-panel {
+        display: block;
+      }
+
+      body.mobile-toc-open .toc-panel {
+        transform: translateX(0);
+      }
+
+      body.mobile-toc-open {
+        overflow: hidden;
+      }
+
+      .mobile-toc-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        position: fixed;
+        left: 10px;
+        top: 10px;
+        z-index: 70;
+        height: 34px;
+        min-width: 60px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--floating-bg);
+        color: var(--text);
+        box-shadow: var(--floating-shadow);
+        backdrop-filter: blur(8px);
+        font: 700 13px/1 var(--font-sans);
+        cursor: pointer;
+        transition: opacity 140ms ease, transform 140ms ease, background-color 120ms ease;
+      }
+
+      body.mobile-toc-open .mobile-toc-toggle {
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(-6px);
+      }
+
+      .mobile-toc-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 70;
+        background: rgba(1, 4, 9, 0.46);
+      }
+
+      body.mobile-toc-open .mobile-toc-backdrop {
+        display: block;
+      }
+
+      .sidebar-expand-fab {
+        display: none !important;
       }
 
       .doc-panel {
-        padding: 28px 20px 72px;
+        padding: 58px 20px 72px;
       }
 
       .back-to-top {
         right: 12px;
         bottom: 12px;
+        width: 40px;
+        height: 40px;
       }
 
+    }
+
+    @media (max-width: 560px) {
+      .doc-panel {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+
+      .markdown-body {
+        font-size: 15px;
+      }
     }
   </style>
   $for(header-includes)$
@@ -740,7 +1106,11 @@ $highlighting-css$
             </div>
           </div>
         </div>
-        <input id="toc-filter" class="toc-filter" type="text" placeholder="筛选标题..." />
+        <input id="toc-filter" class="toc-filter" type="text" placeholder="搜索标题 / 接口 / 参数..." />
+        <div class="toc-filter-tools">
+          <div id="toc-current" class="toc-current">当前：-</div>
+        </div>
+        <div id="toc-filter-status" class="toc-filter-status" aria-live="polite"></div>
         $table-of-contents$
       </nav>
     </aside>
@@ -753,8 +1123,10 @@ $highlighting-css$
   </div>
   $if(toc)$
   <button id="sidebar-expand-fab" class="sidebar-expand-fab" type="button" aria-label="展开侧边栏">展开</button>
+  <button id="mobile-toc-toggle" class="mobile-toc-toggle" type="button" aria-label="打开目录">目录</button>
+  <div id="mobile-toc-backdrop" class="mobile-toc-backdrop" aria-hidden="true"></div>
   $endif$
-  <button id="back-to-top" class="back-to-top" type="button" aria-label="Back to top">&uarr;</button>
+  <button id="back-to-top" class="back-to-top" type="button" aria-label="返回顶部">&uarr;</button>
   <script id="pinyin-match-js">
 __PINYIN_MATCH_INLINE__
   </script>
@@ -769,6 +1141,7 @@ __PINYIN_MATCH_INLINE__
     (function () {
       var root = document.documentElement;
       var body = document.body;
+      var markdownBody = document.querySelector('.markdown-body');
       var sidebarInitReady = false;
       var sourceMdLink = document.getElementById('source-md-link');
       function markSidebarInitReady() {
@@ -818,36 +1191,64 @@ __PINYIN_MATCH_INLINE__
         return null;
       }
 
-      function isPinyinMatch(text, keyword) {
+      function getPinyinMatchRange(text, keyword) {
         var pm = window.PinyinMatch;
-        if (!pm || !pm.match) return false;
+        if (!pm || !pm.match) return null;
         try {
-          return !!pm.match(text, keyword);
+          var hit = pm.match(text, keyword);
+          if (!hit) return null;
+          if (Array.isArray(hit) && hit.length >= 2 && typeof hit[0] === 'number' && typeof hit[1] === 'number') {
+            return [hit[0], hit[1] + 1];
+          }
+          if (Array.isArray(hit[0]) && hit[0].length >= 2) {
+            return [hit[0][0], hit[0][1] + 1];
+          }
+          return [0, 0];
         } catch (e) {
-          return false;
+          return null;
         }
       }
 
-      function isHeadingMatch(text, keyword) {
-        var t = (text || '').toLowerCase();
+      function getHeadingMatchInfo(text, keyword) {
+        var raw = text || '';
+        var t = raw.toLowerCase();
         var q = (keyword || '').toLowerCase();
-        if (!q) return true;
-        if (t.indexOf(q) !== -1) return true;
-        return isPinyinMatch(text, keyword);
+        var idx;
+        if (!q) return { matched: true, range: null };
+
+        idx = t.indexOf(q);
+        if (idx !== -1) return { matched: true, range: [idx, idx + q.length] };
+
+        var range = getPinyinMatchRange(raw, keyword);
+        if (range) return { matched: true, range: range };
+        return { matched: false, range: null };
       }
 
       var tocRoot = document.getElementById('TOC');
       var filterInput = document.getElementById('toc-filter');
+      var filterStatus = document.getElementById('toc-filter-status');
+      var currentSection = document.getElementById('toc-current');
       var quickMenu = document.getElementById('quick-menu');
       var quickMenuToggle = document.getElementById('quick-menu-toggle');
       var quickTheme = document.getElementById('quick-theme');
       var sidebarToggle = document.getElementById('sidebar-toggle');
       var sidebarExpandFab = document.getElementById('sidebar-expand-fab');
+      var mobileTocToggle = document.getElementById('mobile-toc-toggle');
+      var mobileTocBackdrop = document.getElementById('mobile-toc-backdrop');
       var backToTop = document.getElementById('back-to-top');
       var tocFilterActive = false;
       var tocSaveTimer = null;
       var tocLiByHref = Object.create(null);
       var tocStateKey = 'doc-toc-expanded:' + (window.location && window.location.pathname ? window.location.pathname : '');
+      var codeWrapKey = 'doc-code-wrap';
+      var codeWrapEnabled = false;
+      var sectionIndex = [];
+      var sectionIndexReady = false;
+      var headingOffsets = [];
+      var codeBlocks = [];
+      var tableScrollWrappers = [];
+      var scrollSpyScheduled = false;
+      var resizeScheduled = false;
       var prefersDark = false;
       try {
         prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -861,20 +1262,47 @@ __PINYIN_MATCH_INLINE__
         root.setAttribute('data-theme', 'dark');
       }
 
+      try { codeWrapEnabled = localStorage.getItem(codeWrapKey) === 'wrap'; } catch (e) { codeWrapEnabled = false; }
+
       if (root.classList.contains('sidebar-collapsed')) {
         body.classList.add('sidebar-collapsed');
       } else {
         body.classList.remove('sidebar-collapsed');
       }
 
+      function isMobileLayout() {
+        try {
+          return window.matchMedia && window.matchMedia('(max-width: 960px)').matches;
+        } catch (e) {
+          return false;
+        }
+      }
+
+      function setMobileTocOpen(open) {
+        body.classList.toggle('mobile-toc-open', !!open);
+        if (mobileTocToggle) {
+          mobileTocToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+          mobileTocToggle.setAttribute('aria-label', open ? '关闭目录' : '打开目录');
+        }
+      }
+
       function refreshSidebarLabel() {
         if (!sidebarToggle) return;
+        if (isMobileLayout()) {
+          sidebarToggle.textContent = '收起';
+          sidebarToggle.setAttribute('aria-label', '收起目录');
+          return;
+        }
         var collapsed = body.classList.contains('sidebar-collapsed');
         sidebarToggle.textContent = collapsed ? '展开' : '收起';
         sidebarToggle.setAttribute('aria-label', collapsed ? '展开侧边栏' : '收起侧边栏');
       }
 
       function setSidebarCollapsed(collapsed) {
+        if (isMobileLayout()) {
+          setMobileTocOpen(false);
+          return;
+        }
         if (collapsed) {
           root.classList.add('sidebar-collapsed');
           body.classList.add('sidebar-collapsed');
@@ -978,6 +1406,18 @@ __PINYIN_MATCH_INLINE__
         });
       }
 
+      if (mobileTocToggle) {
+        mobileTocToggle.addEventListener('click', function () {
+          setMobileTocOpen(!body.classList.contains('mobile-toc-open'));
+        });
+      }
+
+      if (mobileTocBackdrop) {
+        mobileTocBackdrop.addEventListener('click', function () {
+          setMobileTocOpen(false);
+        });
+      }
+
       function updateBackToTop() {
         if (!backToTop) return;
         if (window.scrollY > 600) backToTop.classList.add('show');
@@ -1024,11 +1464,23 @@ __PINYIN_MATCH_INLINE__
 
         document.addEventListener('click', closeQuickMenu);
         document.addEventListener('keydown', function (e) {
-          if (e.key === 'Escape') closeQuickMenu();
+          if (e.key === 'Escape') {
+            closeQuickMenu();
+            setMobileTocOpen(false);
+          }
         });
       }
 
       if (tocRoot) {
+        Array.prototype.slice.call(tocRoot.querySelectorAll('a[href^="#"]')).forEach(function (a) {
+          a.setAttribute('data-toc-label', a.textContent || '');
+          var href = (a.getAttribute('href') || '').trim();
+          var li = a.closest ? a.closest('li') : null;
+          if (href && href.charAt(0) === '#' && li && !tocLiByHref[href]) {
+            tocLiByHref[href] = li;
+          }
+        });
+
         var lis = Array.prototype.slice.call(tocRoot.querySelectorAll('li'));
         lis.forEach(function (li) {
           var child = directChild(li, 'ul');
@@ -1036,10 +1488,6 @@ __PINYIN_MATCH_INLINE__
           if (!child || !anchor) return;
 
           li.classList.add('has-children');
-          var href = (anchor.getAttribute('href') || '').trim();
-          if (href && href.charAt(0) === '#' && !tocLiByHref[href]) {
-            tocLiByHref[href] = li;
-          }
 
           var btn = document.createElement('button');
           btn.type = 'button';
@@ -1059,49 +1507,228 @@ __PINYIN_MATCH_INLINE__
         applyTocExpandedState(loadTocExpandedState());
       }
 
+      function normalizeSearchText(text) {
+        return (text || '').replace(/\s+/g, ' ').toLowerCase();
+      }
+
+      function headingLevel(el) {
+        var tag = el && el.tagName ? String(el.tagName).toUpperCase() : '';
+        var m = tag.length === 2 ? tag.match(/^H([1-6])/i) : null;
+        return m ? parseInt(m[1], 10) : 6;
+      }
+
+      function isHeading(el) {
+        var tag = el && el.tagName ? String(el.tagName).toUpperCase() : '';
+        return tag.length === 2 && /^H[1-6]/i.test(tag);
+      }
+
+      function collectSectionText(target, hasChildren) {
+        var parts = [target.textContent || ''];
+        var ownLevel = headingLevel(target);
+        var node = target.nextElementSibling;
+        var guard = 0;
+
+        while (node && guard < 3000) {
+          guard++;
+          if (isHeading(node)) {
+            if (hasChildren || headingLevel(node) <= ownLevel) break;
+          }
+          parts.push(node.textContent || '');
+          node = node.nextElementSibling;
+        }
+
+        return normalizeSearchText(parts.join(' '));
+      }
+
+      function buildSectionSearchIndex() {
+        sectionIndex = map.map(function (item) {
+          var href = item.link.getAttribute('href') || '';
+          var li = tocLiByHref[href] || (item.link.closest ? item.link.closest('li') : null);
+          var hasChildren = !!(li && li.classList.contains('has-children'));
+          var label = item.link.getAttribute('data-toc-label') || item.link.textContent || '';
+          return {
+            link: item.link,
+            target: item.target,
+            li: li,
+            label: label,
+            hasChildren: hasChildren,
+            searchText: null
+          };
+        }).filter(function (x) {
+          return !!x.li;
+        });
+        sectionIndexReady = true;
+      }
+
+      function ensureSectionSearchIndex() {
+        if (!sectionIndexReady) buildSectionSearchIndex();
+      }
+
+      function getSectionSearchText(entry) {
+        if (entry.searchText === null) {
+          entry.searchText = collectSectionText(entry.target, entry.hasChildren);
+        }
+        return entry.searchText;
+      }
+
       function showNodeWithContext(li) {
         var n = li;
+        var direct = true;
         while (n && n.tagName && n.tagName.toLowerCase() === 'li') {
           n.classList.remove('toc-hidden');
           n.classList.add('expanded');
+          if (!direct) {
+            var a = directChild(n, 'a');
+            if (a) a.classList.add('toc-filter-context-match');
+          }
+          direct = false;
           n = n.parentElement ? n.parentElement.closest('li') : null;
         }
+      }
+
+      function resetTocFilterDecorations(items) {
+        items.forEach(function (li) {
+          var a = directChild(li, 'a');
+          if (!a) return;
+          a.classList.remove('toc-filter-direct-match');
+          a.classList.remove('toc-filter-content-match');
+          a.classList.remove('toc-filter-context-match');
+          a.textContent = a.getAttribute('data-toc-label') || a.textContent || '';
+        });
+      }
+
+      function updateFilterStatus(keyword, titleCount, contentCount) {
+        if (!filterStatus) return;
+        var q = (keyword || '').trim();
+        var total = titleCount + contentCount;
+        if (!q) {
+          filterStatus.textContent = '';
+          filterStatus.classList.remove('show');
+          filterStatus.classList.remove('is-empty');
+          return;
+        }
+
+        filterStatus.classList.add('show');
+        filterStatus.classList.toggle('is-empty', total === 0);
+        filterStatus.textContent = total > 0
+          ? ('命中 ' + total + ' 项（标题 ' + titleCount + ' / 正文 ' + contentCount + '）')
+          : '无匹配';
+      }
+
+      function highlightTocMatch(anchor, range) {
+        var raw = anchor.getAttribute('data-toc-label') || anchor.textContent || '';
+        var start = range && typeof range[0] === 'number' ? Math.max(0, range[0]) : -1;
+        var end = range && typeof range[1] === 'number' ? Math.min(raw.length, range[1]) : -1;
+
+        anchor.classList.add('toc-filter-direct-match');
+        if (start < 0 || end <= start) {
+          anchor.textContent = raw;
+          return;
+        }
+
+        anchor.innerHTML =
+          escapeHtml(raw.slice(0, start)) +
+          '<mark class="toc-filter-mark">' + escapeHtml(raw.slice(start, end)) + '</mark>' +
+          escapeHtml(raw.slice(end));
       }
 
       function applyFilter(keyword) {
         if (!tocRoot) return;
         var q = (keyword || '').trim();
+        var normalizedQ = normalizeSearchText(q);
         var items = Array.prototype.slice.call(tocRoot.querySelectorAll('li'));
+        resetTocFilterDecorations(items);
 
         if (!q) {
           tocFilterActive = false;
           items.forEach(function (li) {
             li.classList.remove('toc-hidden');
           });
+          updateFilterStatus(q, 0, 0);
           applyTocExpandedState(loadTocExpandedState());
           return;
         }
 
+        ensureSectionSearchIndex();
         tocFilterActive = true;
+        var titleCount = 0;
+        var contentCount = 0;
         items.forEach(function (li) {
           li.classList.add('toc-hidden');
           li.classList.remove('expanded');
         });
 
-        items.forEach(function (li) {
-          var a = directChild(li, 'a');
-          if (!a) return;
-          if (!isHeadingMatch(a.textContent || '', q)) return;
+        sectionIndex.forEach(function (entry) {
+          var info = getHeadingMatchInfo(entry.label, q);
+          var titleMatched = info.matched;
+          var contentMatched = !titleMatched && normalizedQ && getSectionSearchText(entry).indexOf(normalizedQ) !== -1;
+          if (!titleMatched && !contentMatched) return;
 
-          showNodeWithContext(li);
-          Array.prototype.slice.call(li.querySelectorAll('li')).forEach(function (d) {
-            d.classList.remove('toc-hidden');
-          });
+          if (titleMatched) {
+            titleCount++;
+            highlightTocMatch(entry.link, info.range);
+          } else {
+            contentCount++;
+            entry.link.classList.add('toc-filter-content-match');
+          }
+
+          showNodeWithContext(entry.li);
+        });
+
+        updateFilterStatus(q, titleCount, contentCount);
+      }
+
+      function updateCurrentSection(item) {
+        if (!item) return;
+        var label = item.link.getAttribute('data-toc-label') || item.link.textContent || '';
+        setActive(item.link);
+        if (currentSection) {
+          currentSection.textContent = '当前：' + label;
+          currentSection.setAttribute('title', label);
+        }
+      }
+
+      function refreshCurrentSection() {
+        if (!map.length) return;
+        if (!headingOffsets.length) rebuildHeadingOffsets();
+        var current = map[0];
+        var anchorY = window.scrollY + 80;
+        var lo = 0;
+        var hi = headingOffsets.length - 1;
+        var best = -1;
+        while (lo <= hi) {
+          var mid = (lo + hi) >> 1;
+          if (headingOffsets[mid].top <= anchorY) {
+            best = mid;
+            lo = mid + 1;
+          } else {
+            hi = mid - 1;
+          }
+        }
+        if (best >= 0) current = headingOffsets[best].item;
+        updateCurrentSection(current);
+      }
+
+      function rebuildHeadingOffsets() {
+        headingOffsets = map.map(function (item) {
+          return {
+            item: item,
+            top: item.target.getBoundingClientRect().top + window.scrollY
+          };
+        });
+      }
+
+      function scheduleCurrentSectionRefresh() {
+        if (scrollSpyScheduled) return;
+        scrollSpyScheduled = true;
+        window.requestAnimationFrame(function () {
+          scrollSpyScheduled = false;
+          refreshCurrentSection();
         });
       }
 
       function escapeHtml(s) {
-        return s
+        return String(s)
           .replace(/&/g, '&amp;')
           .replace(/</g, '&lt;')
           .replace(/>/g, '&gt;');
@@ -1161,6 +1788,82 @@ __PINYIN_MATCH_INLINE__
         });
       }
 
+      function setupTableScrollHints() {
+        var tables = Array.prototype.slice.call(document.querySelectorAll('.markdown-body table'));
+        tables.forEach(function (table) {
+          var columnCount = 0;
+          Array.prototype.slice.call(table.querySelectorAll('tr')).slice(0, 5).forEach(function (row) {
+            columnCount = Math.max(columnCount, row.children ? row.children.length : 0);
+          });
+          if (columnCount >= 4) {
+            table.style.minWidth = Math.max(560, columnCount * 140) + 'px';
+          }
+
+          if (table.parentElement && table.parentElement.classList.contains('table-scroll')) return;
+          var wrapper = document.createElement('div');
+          wrapper.className = 'table-scroll';
+          table.parentNode.insertBefore(wrapper, table);
+          wrapper.appendChild(table);
+        });
+        tableScrollWrappers = Array.prototype.slice.call(document.querySelectorAll('.markdown-body .table-scroll'));
+        refreshTableScrollHints();
+      }
+
+      function refreshTableScrollHints() {
+        tableScrollWrappers.forEach(function (wrapper) {
+          wrapper.classList.toggle('is-scrollable', wrapper.scrollWidth > wrapper.clientWidth + 2);
+        });
+      }
+
+      function getCodeLanguage(pre, code) {
+        var cls = code.className || '';
+        var text = code.textContent || '';
+        if (pre.classList.contains('http-snippet') || /^(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)\s+/i.test((text.split(/\r?\n/)[0] || '').trim())) return 'HTTP';
+
+        var m = cls.match(/\blanguage-([a-z0-9_+-]+)/i);
+        if (m) return m[1].toUpperCase();
+
+        var classParts = cls.split(/\s+/);
+        var knownLangs = {
+          java: 'JAVA', json: 'JSON', http: 'HTTP', https: 'HTTP', sql: 'SQL',
+          bash: 'BASH', sh: 'BASH', javascript: 'JS', js: 'JS',
+          typescript: 'TS', ts: 'TS', xml: 'XML', yaml: 'YAML',
+          yml: 'YAML', properties: 'PROPERTIES'
+        };
+        for (var i = 0; i < classParts.length; i++) {
+          var lang = knownLangs[classParts[i].toLowerCase()];
+          if (!lang) continue;
+          if (lang === 'HTTPS') return 'HTTP';
+          if (lang === 'SH') return 'BASH';
+          if (lang === 'JS') return 'JS';
+          if (lang === 'TS') return 'TS';
+          if (lang === 'YML') return 'YAML';
+          return lang;
+        }
+
+        if (/^\s*[\{\[]/.test(text)) return 'JSON';
+        if (/\bpublic\s+class\b|\bprivate\s+\w+\b|\bimplements\b/.test(text)) return 'JAVA';
+        return '';
+      }
+
+      function applyCodeWrapState() {
+        codeBlocks.forEach(function (pre) {
+          pre.classList.toggle('code-wrap-enabled', codeWrapEnabled);
+        });
+
+        Array.prototype.slice.call(document.querySelectorAll('.code-wrap-btn')).forEach(function (btn) {
+          btn.textContent = codeWrapEnabled ? '不换行' : '换行';
+          btn.setAttribute('aria-pressed', codeWrapEnabled ? 'true' : 'false');
+          btn.setAttribute('aria-label', codeWrapEnabled ? '关闭代码自动换行' : '开启代码自动换行');
+        });
+      }
+
+      function toggleCodeWrap() {
+        codeWrapEnabled = !codeWrapEnabled;
+        try { localStorage.setItem(codeWrapKey, codeWrapEnabled ? 'wrap' : 'nowrap'); } catch (e) {}
+        applyCodeWrapState();
+      }
+
       function setupCopyButtons() {
         function fallbackCopyText(text) {
           var ta = document.createElement('textarea');
@@ -1183,49 +1886,104 @@ __PINYIN_MATCH_INLINE__
           return ok;
         }
 
-        var blocks = Array.prototype.slice.call(document.querySelectorAll('.markdown-body pre'));
-        blocks.forEach(function (pre) {
+        codeBlocks = Array.prototype.slice.call(document.querySelectorAll('.markdown-body pre'));
+        codeBlocks.forEach(function (pre) {
           var code = pre.querySelector('code');
           if (!code) return;
 
+          var shell = document.createElement('div');
+          shell.className = 'code-block-shell';
+          if (pre.classList.contains('http-snippet')) shell.classList.add('http-snippet-shell');
+          pre.parentNode.insertBefore(shell, pre);
+
+          var actions = document.createElement('div');
+          actions.className = 'code-actions';
+
+          var lang = getCodeLanguage(pre, code);
+          var langBadge = document.createElement('span');
+          langBadge.className = lang ? 'code-lang-badge show' : 'code-lang-badge';
+          langBadge.textContent = lang;
+
           var btn = document.createElement('button');
           btn.type = 'button';
-          btn.className = 'code-copy-btn';
+          btn.className = 'code-action-btn code-copy-btn';
           btn.textContent = '复制';
           btn.setAttribute('aria-label', '复制代码');
 
-          btn.addEventListener('click', function (e) {
+          var wrapBtn = document.createElement('button');
+          wrapBtn.type = 'button';
+          wrapBtn.className = 'code-action-btn code-wrap-btn';
+
+          actions.appendChild(langBadge);
+          actions.appendChild(btn);
+          actions.appendChild(wrapBtn);
+          shell.appendChild(actions);
+          shell.appendChild(pre);
+        });
+
+        if (markdownBody) {
+          markdownBody.addEventListener('click', function (e) {
+            var target = e.target;
+            if (!target || !target.classList) return;
+
+            if (target.classList.contains('code-wrap-btn')) {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleCodeWrap();
+              return;
+            }
+
+            if (!target.classList.contains('code-copy-btn')) return;
             e.preventDefault();
             e.stopPropagation();
 
+            var shell = target.closest ? target.closest('.code-block-shell') : null;
+            var pre = shell ? shell.querySelector('pre') : (target.closest ? target.closest('pre') : null);
+            var code = pre ? pre.querySelector('code') : null;
+            if (!code) return;
+
             var raw = code.textContent || '';
             var resetLabel = function () {
-              btn.textContent = '复制';
+              target.textContent = '复制';
             };
 
             if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) {
               navigator.clipboard.writeText(raw).then(function () {
-                btn.textContent = '已复制';
+                target.textContent = '已复制';
                 setTimeout(resetLabel, 1200);
               }).catch(function () {
                 var ok = fallbackCopyText(raw);
-                btn.textContent = ok ? '已复制' : 'Ctrl+C';
+                target.textContent = ok ? '已复制' : 'Ctrl+C';
                 setTimeout(resetLabel, 1200);
               });
             } else {
               var ok2 = fallbackCopyText(raw);
-              btn.textContent = ok2 ? '已复制' : 'Ctrl+C';
+              target.textContent = ok2 ? '已复制' : 'Ctrl+C';
               setTimeout(resetLabel, 1200);
             }
           });
+        }
 
-          pre.appendChild(btn);
+        applyCodeWrapState();
+      }
+
+      function scheduleLayoutRefresh() {
+        if (resizeScheduled) return;
+        resizeScheduled = true;
+        window.requestAnimationFrame(function () {
+          resizeScheduled = false;
+          refreshSidebarLabel();
+          if (!isMobileLayout()) setMobileTocOpen(false);
+          refreshTableScrollHints();
+          rebuildHeadingOffsets();
+          scheduleCurrentSectionRefresh();
         });
       }
 
       links.forEach(function (a) {
         a.addEventListener('click', function () {
           setActive(a);
+          if (isMobileLayout()) setMobileTocOpen(false);
         });
       });
 
@@ -1240,10 +1998,15 @@ __PINYIN_MATCH_INLINE__
       }
 
       if (map.length) {
-        setActive(map[0].link);
+        updateCurrentSection(map[0]);
       }
       formatHttpSnippets();
+      setupTableScrollHints();
       setupCopyButtons();
+      rebuildHeadingOffsets();
+      window.addEventListener('scroll', scheduleCurrentSectionRefresh, { passive: true });
+      window.addEventListener('resize', scheduleLayoutRefresh, { passive: true });
+      refreshCurrentSection();
       markSidebarInitReady();
     })();
   </script>
