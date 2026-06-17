@@ -109,7 +109,7 @@ $highlighting-css$
       --code-bg-transparent: rgba(22, 27, 34, 0);
       --code-border: #30363d;
       --table-head: #161b22;
-      --table-zebra: #11161d;
+      --table-zebra: #161b22;
       --brand: #58a6ff;
       --brand-soft: rgba(56, 139, 253, 0.15);
       --toc-hover: #21262d;
@@ -810,7 +810,7 @@ $highlighting-css$
 
     html[data-theme='dark'] .markdown-body table {
       color: var(--text);
-      background: transparent;
+      background: var(--bg);
     }
 
     html[data-theme='dark'] .markdown-body table th,
@@ -823,6 +823,10 @@ $highlighting-css$
     html[data-theme='dark'] .markdown-body table thead th {
       background: var(--table-head);
       color: var(--text);
+    }
+
+    html[data-theme='dark'] .markdown-body table tbody td {
+      background: var(--bg);
     }
 
     html[data-theme='dark'] .markdown-body table tbody tr:nth-child(even) td {
