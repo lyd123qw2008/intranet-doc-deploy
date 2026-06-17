@@ -79,6 +79,7 @@ $highlighting-css$
       --text: #1f2328;
       --muted: #59636e;
       --code-bg: #f6f8fa;
+      --code-bg-transparent: rgba(246, 248, 250, 0);
       --code-border: #d1d9e0;
       --table-head: #f6f8fa;
       --table-zebra: #fcfcfd;
@@ -105,6 +106,7 @@ $highlighting-css$
       --text: #c9d1d9;
       --muted: #8b949e;
       --code-bg: #161b22;
+      --code-bg-transparent: rgba(22, 27, 34, 0);
       --code-border: #30363d;
       --table-head: #161b22;
       --table-zebra: #11161d;
@@ -500,12 +502,21 @@ $highlighting-css$
       overflow: hidden;
     }
 
+    .markdown-body .code-block-shell.code-collapsible {
+      position: relative;
+    }
+
     .markdown-body .code-block-shell > pre {
       margin: 0;
       border: 0;
       border-radius: 0;
       padding-top: 12px;
       background: transparent;
+    }
+
+    .markdown-body .code-block-shell.code-collapsed > pre {
+      max-height: 420px;
+      overflow: hidden;
     }
 
     .markdown-body code {
@@ -882,6 +893,41 @@ $highlighting-css$
       min-width: 48px;
     }
 
+    .code-collapse-bar {
+      display: none;
+      justify-content: center;
+      position: relative;
+      padding: 7px 8px;
+      border-top: 1px solid var(--code-border);
+      background: var(--panel);
+    }
+
+    .code-collapsible .code-collapse-bar {
+      display: flex;
+    }
+
+    .code-collapsed .code-collapse-bar::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: -56px;
+      height: 56px;
+      background: linear-gradient(to bottom, var(--code-bg-transparent), var(--code-bg) 76%);
+      pointer-events: none;
+    }
+
+    html[data-theme='dark'] .code-collapse-bar {
+      border-top-color: #30363d;
+      background: #0d1117;
+    }
+
+    .code-collapse-btn {
+      min-width: 112px;
+      position: relative;
+      z-index: 1;
+    }
+
     .code-action-btn:hover {
       background: var(--btn-hover);
     }
@@ -1177,10 +1223,16 @@ __PINYIN_MATCH_INLINE__
           return { link: a, target: document.getElementById(id) };
         })
         .filter(function (x) { return x.target; });
+      var currentActiveLink = null;
 
       function setActive(link) {
-        links.forEach(function (a) { a.classList.remove('active'); });
-        if (link) link.classList.add('active');
+        if (link === currentActiveLink) {
+          if (link && !link.classList.contains('active')) link.classList.add('active');
+          return;
+        }
+        if (currentActiveLink) currentActiveLink.classList.remove('active');
+        currentActiveLink = link || null;
+        if (currentActiveLink) currentActiveLink.classList.add('active');
       }
 
       function directChild(el, tag) {
@@ -1247,6 +1299,8 @@ __PINYIN_MATCH_INLINE__
       var headingOffsets = [];
       var codeBlocks = [];
       var tableScrollWrappers = [];
+      var currentSectionItem = null;
+      var backToTopShown = false;
       var scrollSpyScheduled = false;
       var resizeScheduled = false;
       var prefersDark = false;
@@ -1420,15 +1474,16 @@ __PINYIN_MATCH_INLINE__
 
       function updateBackToTop() {
         if (!backToTop) return;
-        if (window.scrollY > 600) backToTop.classList.add('show');
-        else backToTop.classList.remove('show');
+        var shouldShow = window.scrollY > 600;
+        if (shouldShow === backToTopShown) return;
+        backToTopShown = shouldShow;
+        backToTop.classList.toggle('show', shouldShow);
       }
 
       if (backToTop) {
         backToTop.addEventListener('click', function () {
           window.scrollTo({ top: 0, behavior: 'smooth' });
         });
-        window.addEventListener('scroll', updateBackToTop, { passive: true });
         updateBackToTop();
       }
 
@@ -1682,6 +1737,8 @@ __PINYIN_MATCH_INLINE__
         if (!item) return;
         var label = item.link.getAttribute('data-toc-label') || item.link.textContent || '';
         setActive(item.link);
+        if (item === currentSectionItem) return;
+        currentSectionItem = item;
         if (currentSection) {
           currentSection.textContent = '当前：' + label;
           currentSection.setAttribute('title', label);
@@ -1718,13 +1775,20 @@ __PINYIN_MATCH_INLINE__
         });
       }
 
+      function refreshScrollState() {
+        updateBackToTop();
+        refreshCurrentSection();
+      }
+
       function scheduleCurrentSectionRefresh() {
         if (scrollSpyScheduled) return;
         scrollSpyScheduled = true;
-        window.requestAnimationFrame(function () {
-          scrollSpyScheduled = false;
-          refreshCurrentSection();
-        });
+        window.setTimeout(function () {
+          window.requestAnimationFrame(function () {
+            scrollSpyScheduled = false;
+            refreshScrollState();
+          });
+        }, 80);
       }
 
       function escapeHtml(s) {
@@ -1864,6 +1928,23 @@ __PINYIN_MATCH_INLINE__
         applyCodeWrapState();
       }
 
+      function isLongCodeBlock(text) {
+        var normalized = (text || '').replace(/\r\n/g, '\n');
+        var lines = normalized.split('\n');
+        var contentLines = lines.filter(function (line) { return line.trim() !== ''; }).length;
+        return contentLines > 36 || normalized.length > 2600;
+      }
+
+      function setCodeCollapsed(shell, collapsed) {
+        var btn = shell.querySelector('.code-collapse-btn');
+        shell.classList.toggle('code-collapsed', collapsed);
+        shell.classList.toggle('code-expanded', !collapsed);
+        if (!btn) return;
+        btn.textContent = collapsed ? '展开完整代码' : '收起代码';
+        btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        btn.setAttribute('aria-label', collapsed ? '展开完整代码' : '收起代码');
+      }
+
       function setupCopyButtons() {
         function fallbackCopyText(text) {
           var ta = document.createElement('textarea');
@@ -1919,6 +2000,20 @@ __PINYIN_MATCH_INLINE__
           actions.appendChild(wrapBtn);
           shell.appendChild(actions);
           shell.appendChild(pre);
+
+          if (isLongCodeBlock(code.textContent || '')) {
+            var collapseBar = document.createElement('div');
+            collapseBar.className = 'code-collapse-bar';
+
+            var collapseBtn = document.createElement('button');
+            collapseBtn.type = 'button';
+            collapseBtn.className = 'code-action-btn code-collapse-btn';
+
+            collapseBar.appendChild(collapseBtn);
+            shell.appendChild(collapseBar);
+            shell.classList.add('code-collapsible');
+            setCodeCollapsed(shell, true);
+          }
         });
 
         if (markdownBody) {
@@ -1930,6 +2025,20 @@ __PINYIN_MATCH_INLINE__
               e.preventDefault();
               e.stopPropagation();
               toggleCodeWrap();
+              return;
+            }
+
+            if (target.classList.contains('code-collapse-btn')) {
+              e.preventDefault();
+              e.stopPropagation();
+              var collapseShell = target.closest ? target.closest('.code-block-shell') : null;
+              if (!collapseShell) return;
+              var shouldCollapse = !collapseShell.classList.contains('code-collapsed');
+              setCodeCollapsed(collapseShell, shouldCollapse);
+              if (shouldCollapse) {
+                var shellTop = collapseShell.getBoundingClientRect().top + window.pageYOffset;
+                window.scrollTo({ top: Math.max(shellTop - 16, 0), behavior: 'auto' });
+              }
               return;
             }
 
@@ -2006,7 +2115,7 @@ __PINYIN_MATCH_INLINE__
       rebuildHeadingOffsets();
       window.addEventListener('scroll', scheduleCurrentSectionRefresh, { passive: true });
       window.addEventListener('resize', scheduleLayoutRefresh, { passive: true });
-      refreshCurrentSection();
+      refreshScrollState();
       markSidebarInitReady();
     })();
   </script>
