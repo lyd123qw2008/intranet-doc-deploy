@@ -85,6 +85,7 @@ $highlighting-css$
       --table-zebra: #fcfcfd;
       --brand: #0969da;
       --brand-soft: #ddf4ff;
+      --danger-fg: #cf222e;
       --toc-hover: #eff2f5;
       --toc-text: #59636e;
       --input-bg: #ffffff;
@@ -112,6 +113,7 @@ $highlighting-css$
       --table-zebra: #161b22;
       --brand: #58a6ff;
       --brand-soft: rgba(56, 139, 253, 0.15);
+      --danger-fg: #ff7b72;
       --toc-hover: #21262d;
       --toc-text: #b1bac4;
       --input-bg: #0d1117;
@@ -240,6 +242,7 @@ $highlighting-css$
 
     .quick-menu-button:focus-visible,
     .quick-menu-item:focus-visible,
+    .toc-filter-clear:focus-visible,
     .code-action-btn:focus-visible,
     .mobile-toc-toggle:focus-visible,
     .sidebar-expand-fab:focus-visible,
@@ -268,13 +271,18 @@ $highlighting-css$
       display: none;
     }
 
+    .toc-filter-wrap {
+      position: relative;
+      margin: 0 0 14px;
+    }
+
     .toc-filter {
       width: 100%;
       height: 36px;
       border: 1px solid var(--line);
       border-radius: 6px;
-      padding: 0 10px;
-      margin: 0 0 14px;
+      padding: 0 36px 0 10px;
+      margin: 0;
       font-size: 13px;
       color: var(--text);
       background: var(--input-bg);
@@ -284,6 +292,33 @@ $highlighting-css$
     .toc-filter:focus {
       border-color: #54aeff;
       box-shadow: 0 0 0 2px rgba(84, 174, 255, 0.2);
+    }
+
+    .toc-filter-clear {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 24px;
+      height: 24px;
+      border: 0;
+      border-radius: 4px;
+      padding: 0;
+      background: transparent;
+      color: var(--muted);
+      font: 400 18px/1 var(--font-sans);
+      cursor: pointer;
+    }
+
+    .toc-filter-wrap.has-value .toc-filter-clear {
+      display: inline-flex;
+    }
+
+    .toc-filter-clear:hover {
+      color: var(--text);
+      background: var(--btn-hover);
     }
 
     .toc-filter-tools {
@@ -381,13 +416,6 @@ $highlighting-css$
       color: var(--brand);
       background: var(--brand-soft);
       font-weight: 700;
-    }
-
-    #TOC a.toc-filter-content-match:not(.toc-filter-direct-match) {
-      color: var(--brand);
-      background: var(--brand-soft);
-      border-left: 2px solid var(--brand);
-      padding-left: 6px;
     }
 
     .toc-filter-mark {
@@ -696,6 +724,12 @@ $highlighting-css$
       line-height: 1.45;
       table-layout: auto;
       overflow: hidden;
+    }
+
+    .markdown-body font[color='red' i],
+    .markdown-body font[color='#f00' i],
+    .markdown-body font[color='#ff0000' i] {
+      color: var(--danger-fg) !important;
     }
 
     .markdown-body .table-scroll {
@@ -1014,6 +1048,8 @@ $highlighting-css$
       box-shadow: var(--floating-shadow);
       backdrop-filter: blur(8px);
       cursor: pointer;
+      opacity: 0.72;
+      transition: opacity 120ms ease, background-color 120ms ease, transform 120ms ease;
     }
 
     .mobile-toc-toggle,
@@ -1028,9 +1064,16 @@ $highlighting-css$
     }
 
     .back-to-top:hover,
+    .back-to-top:focus-visible,
     .sidebar-expand-fab:hover,
     .mobile-toc-toggle:hover {
       background: var(--btn-hover);
+    }
+
+    .back-to-top:hover,
+    .back-to-top:focus-visible {
+      opacity: 1;
+      transform: translateY(-1px);
     }
 
     @media (max-width: 960px) {
@@ -1132,6 +1175,22 @@ $highlighting-css$
       .markdown-body {
         font-size: 15px;
       }
+
+      .code-actions {
+        padding-top: 6px;
+        padding-bottom: 6px;
+      }
+
+      .code-action-btn,
+      .code-lang-badge {
+        height: 28px;
+      }
+
+      .back-to-top {
+        width: 38px;
+        height: 38px;
+        font-size: 20px;
+      }
     }
   </style>
   $for(header-includes)$
@@ -1156,7 +1215,10 @@ $highlighting-css$
             </div>
           </div>
         </div>
-        <input id="toc-filter" class="toc-filter" type="text" placeholder="搜索标题 / 接口 / 参数..." />
+        <div id="toc-filter-wrap" class="toc-filter-wrap">
+          <input id="toc-filter" class="toc-filter" type="text" placeholder="搜索目录 / 接口标题..." aria-label="搜索目录" />
+          <button id="toc-filter-clear" class="toc-filter-clear" type="button" aria-label="清除目录搜索" title="清除搜索">&times;</button>
+        </div>
         <div class="toc-filter-tools">
           <div id="toc-current" class="toc-current">当前：-</div>
         </div>
@@ -1280,8 +1342,14 @@ __PINYIN_MATCH_INLINE__
         return { matched: false, range: null };
       }
 
+      function normalizeExactTitle(text) {
+        return (text || '').replace(/\s+/g, '').toLowerCase();
+      }
+
       var tocRoot = document.getElementById('TOC');
       var filterInput = document.getElementById('toc-filter');
+      var filterWrap = document.getElementById('toc-filter-wrap');
+      var filterClear = document.getElementById('toc-filter-clear');
       var filterStatus = document.getElementById('toc-filter-status');
       var currentSection = document.getElementById('toc-current');
       var quickMenu = document.getElementById('quick-menu');
@@ -1307,6 +1375,7 @@ __PINYIN_MATCH_INLINE__
       var backToTopShown = false;
       var scrollSpyScheduled = false;
       var resizeScheduled = false;
+      var filterTimer = null;
       var prefersDark = false;
       try {
         prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -1532,7 +1601,9 @@ __PINYIN_MATCH_INLINE__
 
       if (tocRoot) {
         Array.prototype.slice.call(tocRoot.querySelectorAll('a[href^="#"]')).forEach(function (a) {
-          a.setAttribute('data-toc-label', a.textContent || '');
+          var tocLabel = a.textContent || '';
+          a.setAttribute('data-toc-label', tocLabel);
+          a.setAttribute('title', tocLabel.trim());
           var href = (a.getAttribute('href') || '').trim();
           var li = a.closest ? a.closest('li') : null;
           if (href && href.charAt(0) === '#' && li && !tocLiByHref[href]) {
@@ -1566,52 +1637,16 @@ __PINYIN_MATCH_INLINE__
         applyTocExpandedState(loadTocExpandedState());
       }
 
-      function normalizeSearchText(text) {
-        return (text || '').replace(/\s+/g, ' ').toLowerCase();
-      }
-
-      function headingLevel(el) {
-        var tag = el && el.tagName ? String(el.tagName).toUpperCase() : '';
-        var m = tag.length === 2 ? tag.match(/^H([1-6])/i) : null;
-        return m ? parseInt(m[1], 10) : 6;
-      }
-
-      function isHeading(el) {
-        var tag = el && el.tagName ? String(el.tagName).toUpperCase() : '';
-        return tag.length === 2 && /^H[1-6]/i.test(tag);
-      }
-
-      function collectSectionText(target, hasChildren) {
-        var parts = [target.textContent || ''];
-        var ownLevel = headingLevel(target);
-        var node = target.nextElementSibling;
-        var guard = 0;
-
-        while (node && guard < 3000) {
-          guard++;
-          if (isHeading(node)) {
-            if (hasChildren || headingLevel(node) <= ownLevel) break;
-          }
-          parts.push(node.textContent || '');
-          node = node.nextElementSibling;
-        }
-
-        return normalizeSearchText(parts.join(' '));
-      }
-
       function buildSectionSearchIndex() {
         sectionIndex = map.map(function (item) {
           var href = item.link.getAttribute('href') || '';
           var li = tocLiByHref[href] || (item.link.closest ? item.link.closest('li') : null);
-          var hasChildren = !!(li && li.classList.contains('has-children'));
           var label = item.link.getAttribute('data-toc-label') || item.link.textContent || '';
           return {
             link: item.link,
             target: item.target,
             li: li,
-            label: label,
-            hasChildren: hasChildren,
-            searchText: null
+            label: label
           };
         }).filter(function (x) {
           return !!x.li;
@@ -1623,19 +1658,14 @@ __PINYIN_MATCH_INLINE__
         if (!sectionIndexReady) buildSectionSearchIndex();
       }
 
-      function getSectionSearchText(entry) {
-        if (entry.searchText === null) {
-          entry.searchText = collectSectionText(entry.target, entry.hasChildren);
-        }
-        return entry.searchText;
-      }
-
-      function showNodeWithContext(li) {
+      function showNodeWithContext(li, expandSelf) {
         var n = li;
         var direct = true;
         while (n && n.tagName && n.tagName.toLowerCase() === 'li') {
           n.classList.remove('toc-hidden');
-          n.classList.add('expanded');
+          if (!direct || expandSelf) {
+            n.classList.add('expanded');
+          }
           if (!direct) {
             var a = directChild(n, 'a');
             if (a) a.classList.add('toc-filter-context-match');
@@ -1645,21 +1675,27 @@ __PINYIN_MATCH_INLINE__
         }
       }
 
+      function showDescendantNodes(li) {
+        var childItems = li ? li.querySelectorAll('li') : [];
+        Array.prototype.slice.call(childItems).forEach(function (child) {
+          child.classList.remove('toc-hidden');
+          child.classList.add('expanded');
+        });
+      }
+
       function resetTocFilterDecorations(items) {
         items.forEach(function (li) {
           var a = directChild(li, 'a');
           if (!a) return;
           a.classList.remove('toc-filter-direct-match');
-          a.classList.remove('toc-filter-content-match');
           a.classList.remove('toc-filter-context-match');
           a.textContent = a.getAttribute('data-toc-label') || a.textContent || '';
         });
       }
 
-      function updateFilterStatus(keyword, titleCount, contentCount) {
+      function updateFilterStatus(keyword, titleCount, expandedSubmenus) {
         if (!filterStatus) return;
         var q = (keyword || '').trim();
-        var total = titleCount + contentCount;
         if (!q) {
           filterStatus.textContent = '';
           filterStatus.classList.remove('show');
@@ -1668,10 +1704,14 @@ __PINYIN_MATCH_INLINE__
         }
 
         filterStatus.classList.add('show');
-        filterStatus.classList.toggle('is-empty', total === 0);
-        filterStatus.textContent = total > 0
-          ? ('命中 ' + total + ' 项（标题 ' + titleCount + ' / 正文 ' + contentCount + '）')
-          : '无匹配';
+        filterStatus.classList.toggle('is-empty', titleCount === 0);
+        if (titleCount === 0) {
+          filterStatus.textContent = '无匹配';
+        } else if (expandedSubmenus) {
+          filterStatus.textContent = '已展开 ' + titleCount + ' 个相关目录';
+        } else {
+          filterStatus.textContent = '命中 ' + titleCount + ' 个目录';
+        }
       }
 
       function highlightTocMatch(anchor, range) {
@@ -1694,7 +1734,6 @@ __PINYIN_MATCH_INLINE__
       function applyFilter(keyword) {
         if (!tocRoot) return;
         var q = (keyword || '').trim();
-        var normalizedQ = normalizeSearchText(q);
         var items = Array.prototype.slice.call(tocRoot.querySelectorAll('li'));
         resetTocFilterDecorations(items);
 
@@ -1711,7 +1750,7 @@ __PINYIN_MATCH_INLINE__
         ensureSectionSearchIndex();
         tocFilterActive = true;
         var titleCount = 0;
-        var contentCount = 0;
+        var titleMatches = [];
         items.forEach(function (li) {
           li.classList.add('toc-hidden');
           li.classList.remove('expanded');
@@ -1719,22 +1758,48 @@ __PINYIN_MATCH_INLINE__
 
         sectionIndex.forEach(function (entry) {
           var info = getHeadingMatchInfo(entry.label, q);
-          var titleMatched = info.matched;
-          var contentMatched = !titleMatched && normalizedQ && getSectionSearchText(entry).indexOf(normalizedQ) !== -1;
-          if (!titleMatched && !contentMatched) return;
-
-          if (titleMatched) {
-            titleCount++;
-            highlightTocMatch(entry.link, info.range);
-          } else {
-            contentCount++;
-            entry.link.classList.add('toc-filter-content-match');
-          }
-
-          showNodeWithContext(entry.li);
+          if (!info.matched) return;
+          titleMatches.push({ entry: entry, info: info });
         });
 
-        updateFilterStatus(q, titleCount, contentCount);
+        var exactQ = normalizeExactTitle(q);
+        var exactMatches = titleMatches.filter(function (match) {
+          return normalizeExactTitle(match.entry.label) === exactQ;
+        });
+        if (exactMatches.length > 0) {
+          titleMatches = exactMatches;
+        }
+        var shouldExpandSubmenus = exactMatches.length > 0;
+
+        if (titleMatches.length > 0) {
+          titleMatches.forEach(function (match) {
+            titleCount++;
+            highlightTocMatch(match.entry.link, match.info.range);
+            showNodeWithContext(match.entry.li, shouldExpandSubmenus);
+            if (shouldExpandSubmenus) {
+              showDescendantNodes(match.entry.li);
+            }
+          });
+        }
+
+        updateFilterStatus(q, titleCount, shouldExpandSubmenus);
+      }
+
+      function syncFilterClearButton() {
+        if (!filterInput || !filterWrap) return;
+        filterWrap.classList.toggle('has-value', filterInput.value.length > 0);
+      }
+
+      function clearTocFilter() {
+        if (!filterInput) return;
+        if (filterTimer) {
+          clearTimeout(filterTimer);
+          filterTimer = null;
+        }
+        filterInput.value = '';
+        syncFilterClearButton();
+        applyFilter('');
+        filterInput.focus();
       }
 
       function updateCurrentSection(item) {
@@ -2101,12 +2166,25 @@ __PINYIN_MATCH_INLINE__
       });
 
       if (filterInput) {
-        var filterTimer = null;
+        syncFilterClearButton();
         filterInput.addEventListener('input', function () {
+          syncFilterClearButton();
           if (filterTimer) clearTimeout(filterTimer);
           filterTimer = setTimeout(function () {
             applyFilter(filterInput.value);
           }, 100);
+        });
+        filterInput.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape' && filterInput.value) {
+            e.preventDefault();
+            clearTocFilter();
+          }
+        });
+      }
+
+      if (filterClear) {
+        filterClear.addEventListener('click', function () {
+          clearTocFilter();
         });
       }
 
