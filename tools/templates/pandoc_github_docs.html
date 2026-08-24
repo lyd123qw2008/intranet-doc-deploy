@@ -782,7 +782,14 @@ $highlighting-css$
       border-bottom: 1px solid var(--line);
       padding: 7px 10px;
       vertical-align: top;
-      word-break: break-word;
+      word-break: normal;
+      overflow-wrap: break-word;
+    }
+
+    .markdown-body table code {
+      white-space: nowrap;
+      word-break: normal;
+      overflow-wrap: normal;
     }
 
     .markdown-body table tr > :last-child {
@@ -1602,9 +1609,9 @@ __PINYIN_MATCH_INLINE__
 
       if (tocRoot) {
         Array.prototype.slice.call(tocRoot.querySelectorAll('a[href^="#"]')).forEach(function (a) {
-          var tocLabel = a.textContent || '';
+          var tocLabel = (a.textContent || '').replace(/\s+/g, ' ').trim();
           a.setAttribute('data-toc-label', tocLabel);
-          a.setAttribute('title', tocLabel.trim());
+          a.setAttribute('title', tocLabel);
           var href = (a.getAttribute('href') || '').trim();
           var li = a.closest ? a.closest('li') : null;
           if (href && href.charAt(0) === '#' && li && !tocLiByHref[href]) {
